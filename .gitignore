@@ -1,0 +1,107 @@
+# .gitignore
+
+# Secret files and sensitive data
+*.pem
+*.key
+*.crt
+*.env
+.secret
+*.p12
+*.pfx
+*.jks
+*.p8
+*.txt
+
+# macOS system files
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Temporary files from macOS
+.DS_Store?
+._*
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+
+# macOS aliases
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+
+# Generic system files
+Thumbs.db
+Desktop.ini
+
+# User-specific files
+*.swp
+*.swo
+*.tmp
+*.temp
+*.log
+*~
+
+# IDE and Editor-specific files
+.vscode/
+.idea/
+*.sublime-workspace
+*.sublime-project
+*.code-workspace
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pvm
+.Python
+.env
+.venv
+venv/
+ENV/
+env/
+Bootup.py
+
+# Java
+*.class
+*.jar
+*.war
+*.ear
+*.iml
+*.iws
+*/target/
+
+# Log files
+logs/
+*.log
+*.out
+*.pid
+
+# Archives
+*.7z
+*.bz2
+*.gz
+*.rar
+*.tar
+*.zip
+
+# Operating system files
+*.bak
+*.swp
+*.kdev4
+*~
+
+# Local IDE configuration files
+.gradle/
+.factorypath
+.recommenders/
+.settings/
+*mvn-eclipse.log
