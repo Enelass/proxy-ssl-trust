@@ -134,36 +134,6 @@ default_user() {
 	if [[ ! -d ${HOME_DIR} ]]; then log "Error   -    Home directory for "$logged_user" does not exist at "$HOME_DIR"! Aborting..."; exit 1; else log "Info    -    Home directory for "$logged_user" is located at "$HOME_DIR""; fi
 }
 
-cacert_integrity_check(){	
-	log "Info    -    Checking $customcacert integrity..."
-  local cacert_file=$1
-  local n=0
-  local cert_file
-
-  # Read the entire cacert.pem file into a variable
-	pem_contents=$(<"$cacert_file")
-
-	# Initialize an empty array to hold individual certificates
-	certificates=()
-
-	# Use a while loop to extract each certificate and store it in an array
-	while [[ "$pem_contents" =~ (-----BEGIN CERTIFICATE-----(.*?)
-	-----END CERTIFICATE-----) ]]; do
-	    # Append the matched certificate to the certificates array
-	    certificates+=( "${BASH_REMATCH[0]}" )
-
-	    # Remove the processed certificate from the pem_contents
-	    pem_contents=${pem_contents#*-----END CERTIFICATE-----}
-	done
-
-	# Now process each certificate using openssl
-	for cert in "${certificates[@]}"; do
-	    # If you need to decode the certificate with openssl, you can do like this:
-	    echo "$cert" | openssl x509 -noout -text
-	done
-	sleep 600
-}
-
 
 # Function to add the internal Root CAs from the OS Keychain Manager to the certificate stores (cacert.pem)
 trustca() {
@@ -293,7 +263,7 @@ source "$scriptpath/Keychain_InternalCAs.sh" --silent		# This command will invok
 trustca "$customcacert"
 
 # Check AGAIN if the certificate authority file is valid after patching...
-# cacert_integrity_check $customcacert
+# cacert_integrity_check.sh $customcacert
 
 # Let's inspect the file for existing environement variables & Let's reference this cacert.pem in the Shell Interpreter config file
 shell_var

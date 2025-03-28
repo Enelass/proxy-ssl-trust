@@ -23,13 +23,7 @@ version="v0.2"
 scriptname="$0"
 
 ######################## A bit of epic music never hurts ##########################
-cleanup() { if [ -n "$AUDIO_PID" ]; then kill "$AUDIO_PID" 2>/dev/null; wait "$AUDIO_PID" 2>/dev/null; fi }
-# Trap the script termination signals
-trap cleanup SIGINT
-trap cleanup EXIT
-# Play the audio file using afplay (default audio player in macOS)
-AUDIO_FILE="./Two_Swords.m4a"
-if [ -f "$AUDIO_FILE" ]; then afplay "$AUDIO_FILE" & ; AUDIO_PID=$! ; fi
+source ./play.sh
 
 
 ########################## Standalone Exec - Specifics #############################
@@ -109,6 +103,7 @@ uninstall() {
 	if [[ -n "$CONFIG_FILE_BAK" && -f "$CONFIG_FILE_BAK" && -f "$CONFIG_FILE" ]]; then
 		mv $CONFIG_FILE_BAK $CONFIG_FILE
 		if [ $? -eq 0 ]; then log "Info    -    $CONFIG_FILE hads been restored"; fi
+		source $CONFIG_FILE
 	fi
 
 	# Uninstall Alpaca only if user requested a uninstall, otherwise we'll just clear the Shell config file (e.g. ~/.zshrc) from the introduced changes
@@ -153,7 +148,7 @@ shell_config() {
 		log "Info    -      Default Shell: $DEFAULT_SHELL matches the current Shell: $CURRENT_SHELL"
 	else
 		log "Error   -      Default Shell: $DEFAULT_SHELL does not match the current Shell: $CURRENT_SHELL"
-		handle_error "Info    -      We'll abort, otherwise we'd set the environement variables in a Shell interpreters that isn't used by the user"
+		handle_error "Info    -      We'll abort, otherwise we'd set the environment variables in a Shell interpreters that isn't used by the user"
 	fi
 
 	# Define config file based on the shell
@@ -220,7 +215,7 @@ check_set_proxy_var() {
     fi
 
     if [[ -n $patchrc ]]; then
-    	log "Info    -      We need to patch $CONFIG_FILE to add a unique environement variable for Alpaca:"
+    	log "Info    -      We need to patch $CONFIG_FILE to add a unique environment variable for Alpaca:"
     	log "Info    -      We'll append this to the file, export {all,http,https}_proxy=http://localhost:3128"
     	log "Info    -      Ensuring we have a back-up for $CONFIG_FILE prior to making changes..."
         CONFIG_FILE_BAK="$CONFIG_FILE.pre-alpacasetup"
@@ -230,7 +225,7 @@ check_set_proxy_var() {
         echo 'export {all,http,https}_proxy=http://localhost:3128' >> "$CONFIG_FILE"
         source $CONFIG_FILE
     else
-    	log "Info    -      The right environement variable for Alpaca was already found in $CONFIG_FILE"
+    	log "Info    -      The right environment variable for Alpaca was already found in $CONFIG_FILE"
     	log "Info    -          export {all,http,https}_proxy=http://localhost:3128"
     fi
 }
@@ -240,7 +235,7 @@ install_alpaca() {
 	log "Info    - Alpaca is not installed..."
 	
 	# Check if Homebrew is installed as we neet it to install Alpaca...
-	if ! command -v brew > /dev/null 2>&1; then handle_error "Error   - This script requires Homebrew, please install it...\nIf you're corporate, you might have it packaged by your provisioning/SOE team (e.g. JAMF)\nOtherwise, you can install it as per: https://brew.sh/"; else log "Info    -   We'll attempt installing it with $(brew --version) is installed"; fi
+	if ! command -v brew > /dev/null 2>&1; then handle_error "Error   - This script requires Homebrew, please install it...\nIf you're corporate, you might have it packaged by your provisioning/SOE team (e.g. JAMF)\nOtherwise, you can install it as per: https://brew.sh/"; else log "Info    -   We'll attempt installing it with $(brew --version)"; fi
 	
 	# Attempt installing Alpaca 3x times
 	brew tap samuong/alpaca
@@ -264,7 +259,7 @@ install_alpaca() {
 			  log  "Info    -    Alpaca is running on TCP $(lsof -i -P -n -sTCP:LISTEN | grep alpaca | head -n 1 | awk '{print $9}' )\n"
 		else 
 			log  "Info - Alpaca does not appear to be running... Attempting to run it"
-			brew services start alpaca
+			brew services start alpaca > /dev/null 2>&1
 			if [ $? -ne 0 ]; then
 				handle_error "Error   - Brew failed to start the service, aborting... please troubleshoot as per https://github.com/samuong/alpaca"
 			else
@@ -380,7 +375,7 @@ default_user
 # Let's identify the default Shell interpreter and associated config file for that user...
 shell_config
 
-# Let's inspect the file for existing environement variables & Let's reference this cacert.pem in the Shell Interpreter config file
+# Let's inspect the file for existing environment variables & Let's reference this cacert.pem in the Shell Interpreter config file
 shell_var
 source "$CONFIG_FILE"; sleep 1
 
