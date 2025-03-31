@@ -2,20 +2,18 @@
 
 #################### Written by Florian Bidabe #####################################
 #                                                                                  #
-#  DESCRIPTION: The purpose of this script / hotfix is to fix certificate trust    #
-#               issues where any client fails to connect as it does not trust      #
-#               MacOS Certificate Authorities found in the Keychain (System Store) #
-#               issued internally. The script adds the Base64 Root                 #
-#               certificate authorities to the various client certificate store    #
-#               conventionally named (cacert.pem)                                  #
-#               Future release will support setting this as a Daemon and could     #
-#               support Java keystore, or DER if use-cases are found.              #
-#               Also it will support attribute to uninstall, help, and scanall     #
+#  DESCRIPTION: The purpose of this suite of scripts is to fix certificate trust   #
+#               issues where clients (CLI mostly but also a few GUIs) fail to      #
+#               connect as it does not trust Internal Certificate Authorities      #
+#               found in KeychainAccess.                                           #
+#               This script invokes other scripts to detect proxy settings and     #
+#               create persistent connectivity for the current user.               #
+#               It also support a variety of swithces for advanced troubleshooting #
 #  INITIAL RELEASE DATE: 19-Sep-2024                                               #
 #  AUTHOR: Florian Bidabe                                                          #
-#  LAST RELEASE DATE: 19-Sep-2024                                                  #
-#  VERSION: 1.3                                                                    #
-#  REVISION:                                                                       #
+#  LAST RELEASE DATE: 30-Mar-2025                                                  #
+#  VERSION: 1.7                                                                    #
+#  REVISION:    Major revamp, better stdout, better logging, and bug fixes         #
 #                                                                                  #
 #                                                                                  #
 ####################################################################################
@@ -23,8 +21,8 @@
 
 
 #################################   Variables     ####################################
-AppName="CATrustDaemon"
-version="1.3"
+AppName="Proxy_SSL_Trust"
+version="1.7"
 scriptpath=$(pwd)
 
 if [ "$EUID" -ne 0 ]; then # Standard User
@@ -91,13 +89,13 @@ list() {
 # Switch to patch-only known (previously scanned) pem files / Quick mode
 patch() {
 	switch="Internal Root CAs listing & PEM Patching"
-	pempatch=1 #pempatch=1 implies KAlist=1 so no need to explicitely define it as default, we'll need it for patching anyway
+	pempatch=1 #pempatch=1 will invoke Keychain_InternalCAs.sh so no need to set KAlist=1 as it'd be redundant...
 }
 
 # Switch to patch-only known (previously scanned) pem files / Quick mode
 patch_uninstall() {
 	switch="PEM Patching uninstallation"
-	patch_uninstall=1 #pempatch=1 implies KAlist=1 so no need to explicitely define it as default, we'll need it for patching anyway
+	patch_uninstall=1
 }
 
 # Function to check if we're running on MacOS

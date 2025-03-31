@@ -5,6 +5,10 @@
 
 # This script is designed to be part of a larger system for managing certificate stores on macOS. It relies on other scripts and files to function correctly. Ensure all dependencies are in place and correctly configured before running this script.
 
+The script adds the Base64 Root           #
+#               certificate authorities to the various client certificate store    #
+#               conventionally named (cacert.pem)
+
 # Usage:
 # 1. Ensure the `teefile` variable is defined before sourcing this script.
 # 2. Define the `log` function to handle logging.
