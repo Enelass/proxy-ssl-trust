@@ -24,7 +24,7 @@ version=0.3
 
 
 # If this is a standalone execution...
-if [[ -z ${logI-} ]]; then clear; source ./stderr_stdout_syntax.sh; source ./play.sh; fi
+if [[ -z ${logI-} ]]; then source ./stderr_stdout_syntax.sh; source ./play.sh; fi
 
 
 #################################  Functions ########################################
