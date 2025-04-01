@@ -9,7 +9,6 @@ websites=("https://photonsec.com.au" "https://www.google.com" "https://www.wikip
 max_success=1   # Maximum number of successful web connections to stop after webconn_checks()
 success_count=0 # Counter for successful web connections for webconn_checks()
 curltimeout=5  # Number of seconds after which cURL will give up connecting for check_website()
-dns_server="8.8.8.8"  # DNS Server IP for 
 
 
 ################################ FUNCTIONS #############################
@@ -95,7 +94,8 @@ webconn_checks
 # If we couldn't establish web connections, let's check basic network requirements and look for proxy settings
 if [[ $success_count -gt 0 ]]; then
   echo ""; logI "We were able to connect without proxy..."
-  # Next check_for_ssl_interception``
+  logI "We will now test web requests and whether these are SSL intercepted or not..."
+  source ./connect_ssl.sh
 else
   echo"";   logW "We couldn't connect to any websites, so we might be proxied...\n"
   logI "Performing additional diagnostics. Let's inspect the NICs..."

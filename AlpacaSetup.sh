@@ -11,16 +11,17 @@
 #  INITIAL RELEASE DATE: 19-Mar-2025                                               #
 #  AUTHOR: Florian Bidabe                                                          #
 #  LAST RELEASE DATE: 19-Mar-2025                                                  #
-#  VERSION: 0.1                                                                    #
+#  VERSION: 0.2                                                                    #
 #  REVISION:                                                                       #
 #                                                                                  #
 #                                                                                  #
 ####################################################################################
 
 #################################### Variables ####################################
-testURL="https://www.google.com"		# Input here a website you know to be SSL intercepted. This serves to test where Alcapa is running as expected and making use of the PAC File.
 version="v0.2"
 scriptname="$0"
+variables=("all_proxy" "ALL_PROXY" "http_proxy" "HTTP_PROXY" "https_proxy" "HTTPS_PROXY" "no_proxy" "NO_PROXY")	# Proxy Environment Variables
+
 
 ########################## Standalone Exec - Specifics #############################
 # If not invoked/sourced by another script, we'll set some variable for standalone use otherwise this would be ineritated by the source script along with $teefile...
@@ -52,46 +53,6 @@ if [[ -z "${teefile-}" ]]; then
 fi
 
 ############################## Defining functions ##################################
-
-connectivity_test() {
-	log "Info    - We will now run some connectivity tests or revert the changes made before..."
-	# Is the Shell instructed to use Alpaca proxy?
-	if [[ $HTTPS_PROXY == "http://localhost:3128" || $https_proxy == "http://localhost:3128" ]]; then
-		log "Info    -   The proxy env variable is set to http://localhost:3128"
-	else
-		log "Error   -   The proxy env variable is not set to http://localhost:3128... It should!"
-	fi
-
-	# Is Alpaca proxy running?
-	if lsof -i -P -n -sTCP:LISTEN | grep alpaca > /dev/null 2>&1; then
-		log  "Info    -   Alpaca is running on TCP $(lsof -i -P -n -sTCP:LISTEN | grep alpaca | head -n 1 | awk '{print $9}')"
-	else
-		log  "Error   -   Alpaca does not appear to be running... It should!"
-	fi
-	# Can we connect to...
-	log "Info    -   Attempting to connect to "$testURL" via localhost:3128..."
-
-	tries=3 ; success=0  # Number of attempts and Flag to indicate success
-	for attempt in {1..$tries}; do
-	    if curl -kI "$testURL" > /dev/null 2>&1; then
-	        log "Success - We connected just fine 👍 !"
-	        success=1; break  # Exit the loop on success
-	    else
-	        log "Error   -     Attempt $attempt - We couldn't connect to $testURL !"
-	    fi
-	done
-	# If we cannot connect, revert changes but if the connectivity flag is set, do not uninstall Alpaca!
-	if (( success == 0 )); then
-	    log "Error   - All attempts to connect to $testURL failed!"
-	    if [[ -z ${test-} ]]; then
-	        log "Info    -   Connection failed after multiple attempts, reverting changes..."
-	        uninstall; unset uninst
-	    fi
-	fi
-	exit 0
-}
-
-
 uninstall() {
 	if [[ -n $uninst ]]; then log "Info    - Uninstall switch was called"; fi
 	log "Info    -    Let's delete the Alpaca binaries, settings and env var ..."
@@ -174,14 +135,13 @@ shell_config() {
 }
 
 shell_var(){
-	variables=("all_proxy" "http_proxy" "https_proxy" "no_proxy")
 	logI "    Let's look for Proxy related Environment Variables..."
 	# Loop through each variable and check if it is set
 	for var in "${variables[@]}"; do
-	if [[ -n ${(P)var} ]];
-		then setvar+=$(echo "$var is set to ${(P)var} - ")
-		logI "      $var is set to ${(P)var}"
-	fi
+		if [[ -n ${(P)var} ]];
+			then setvar+=$(echo "$var is set to ${(P)var} - ")
+			logI "      $var is set to ${(P)var}"
+		fi
 	done
 	if [[ -z ${setvar-} ]]; then
 		logI "      Proxy variables are not set in this session..."
@@ -320,9 +280,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 # If we want to uninstall, that'd be now...
-if [[ test -eq 1 ]]; then
-	connectivity_test
-fi
+if [[ test -eq 1 ]]; then connectivity_test; fi
 
 # If we want to uninstall, that'd be now...
 if [[ uninst -eq 1 ]]; then
@@ -332,7 +290,7 @@ if [[ uninst -eq 1 ]]; then
 fi
 
 # If we're using a PAC file, we'll need to have Alpaca running or we'll install it
-if $(brew list Alpaca); then
+if $(brew list Alpaca > /dev/null 2>&1) ; then
 	logI "Alpaca is already installed, it seems..."
 else install_alpaca
 fi
@@ -347,7 +305,25 @@ shell_config
 
 # Let's inspect the file for existing environment variables & Let's reference this cacert.pem in the Shell Interpreter config file
 shell_var
-source "$CONFIG_FILE"; sleep 1
+source "$CONFIG_FILE"
 
 # Now that all requirements are met, we'll test the connectivity or revert the changes made by this script...
-connectivity_test
+logI " We will now run some connectivity tests or revert the changes made before..."
+# Is the Shell instructed to use Alpaca proxy?
+if [[ $http_proxy == "http://localhost:3128" || $HTTP_PROXY == "http://localhost:3128" || $HTTPS_PROXY == "http://localhost:3128" || $https_proxy == "http://localhost:3128" ]]; then
+	logI "   The proxy env variables are set to http://localhost:3128"
+else
+	logE "   The proxy env variables are not set to http://localhost:3128...!"
+fi
+
+# Is Alpaca proxy running?
+if lsof -i -P -n -sTCP:LISTEN | grep alpaca > /dev/null 2>&1; then
+	logI  "   Alpaca is running on TCP $(lsof -i -P -n -sTCP:LISTEN | grep alpaca | head -n 1 | awk '{print $9}')"
+else
+	logE  "   Alpaca does not appear to be running... It should! Aborting..."
+fi
+
+# The local proxy is installed and running, we'll now test connectivity and see whether or not the connection is SSL intercepted
+logI "We will now test web requests and whether these are SSL intercepted or not..."
+source ./connect_ssl.sh
+

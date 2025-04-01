@@ -80,7 +80,7 @@ else
             pac_url="$url"      # We set this variable for the other script to know we have a pac file
         else
             logW "Testing PAC file URL: $url... It cannot be read!"
-            sleep 3; echo -en "\r\033[2K\033[F\033[2K"
+            sleep 2; echo -en "\r\033[2K\033[F\033[2K"
         fi
     done
 fi

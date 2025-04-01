@@ -69,7 +69,7 @@ help() {
 
 uninstall(){
 	logI "    Requesting uninstallation"
-	default_user; shell_config
+	source ./user_config.sh
 	pattern='.config\/cacert\/cacert.pem'
 	for var in "${variables[@]}"; do unset "$var"; done # Loop through the array and unset custom Certificate Store variable for various clients
 	if [[ -f "$CONFIG_FILE" ]]; then 
@@ -92,62 +92,6 @@ uninstall(){
 	exit 0
 }
 
-
-# Function to identify the shell interpreter and its config file
-shell_config() {
-	echo ""; logI " Identifying the Shell interpreter" 
-	DEFAULT_SHELL=$SHELL 									# Determine default shell
-	CURRENT_SHELL=$(ps -p $$ -o comm=) 		# Determine current shell
-	if [[ "$DEFAULT_SHELL" ==  "$CURRENT_SHELL" ]]; then
-		logI "    Default Shell: $DEFAULT_SHELL matches the current Shell: $CURRENT_SHELL"
-	else
-		logE "    Default Shell: $DEFAULT_SHELL does not match the current Shell: $CURRENT_SHELL"
-		logI "    We'll abort, otherwise we'd set the environement variables in a Shell interpreters that isn't used by the user"
-	fi
-
-	# Define config file based on the shell
-	CONFIG_FILE=""
-	CURRENT_SHELL="${SHELL##*/}"
-	case $CURRENT_SHELL in
-	    bash) CONFIG_FILE="$HOME_DIR/.bashrc" ;;
-	    zsh) CONFIG_FILE="$HOME_DIR/.zshrc" ;;
-	    ksh) CONFIG_FILE="$HOME_DIR/.kshrc" ;;
-	    fish) CONFIG_FILE="$HOME_DIR/.config/fish/config.fish" ;;
-	    csh|tcsh) CONFIG_FILE="$HOME_DIR/.cshrc" ;;
-	    sh) CONFIG_FILE="$HOME_DIR/.profile" ;;  # /bin/sh config files depend on the system and actual shell linked to /bin/sh
-	    *) echo "Unknown or less commonly used shell: $CURRENT_SHELL"; CONFIG_FILE="Unknown" ;;
-	esac
-
-	if [[ -f $CONFIG_FILE ]]; then
-		logS "    Configuration file was found at $CONFIG_FILE"
-	else
-		logW "    Configuration file should be located at $CONFIG_FILE but it does not exist..."
-		if [[ -n "${logged_user}" ]]; then
-			logI "    We'll create it..."; touch $CONFIG_FILE
-		else
-			logE "    Aborting since we can't set environment variables without configuration file..."
-		fi
-	fi
-}
-
-# Function to identify the logged-in user
-default_user() {
-	#log "Info    - Identifying the default user"... 
-	logged_user=$(stat -f "%Su" /dev/console)
-	if [ "$EUID" -ne 0 ]; then # Standard sser
-		logS "    Logged-in user is identified as $logged_user" 
-	else #Root User
-		logW " This script should not run as root, aborting..."
-		if [[ -n "${logged_user}" ]]; then logE " Please run it with $logged_user"; fi
-	fi
-
-	HOME_DIR=$(dscl . -read /Users/$logged_user NFSHomeDirectory | awk '{print $2}')
-	if [[ ! -d ${HOME_DIR} ]]; then
-		logE "    Home directory for "$logged_user" does not exist at "$HOME_DIR"! Aborting..."
-	else logS "    Home directory for "$logged_user" is located at "$HOME_DIR""; fi
-}
-
-
 # Function to add the internal Root CAs from the OS Keychain Manager to the certificate stores (cacert.pem)
 trustca() {
 	cacert="$1"		# $1 is the pem files to be patched... where $2 is the name of the application requiring it
@@ -156,8 +100,6 @@ trustca() {
 	  logE "    It will not be patched. Error was reported in the logfile"
 	else
 	  logI "    It will be patched with Internal Root CAs from the MacOS Keychain Access:"
-	  # We keep a vanilla cacert.pem as we'll use it to determine if a website isn't signed by a public CA
-	  if [[ ! -f $cacert.public ]]; then cp $cacert $cacert.public; fi
 	  # Adds .bak extension to back it up the pem file everytime we patch it...
 	  cacertbackup=$cacert.$(date '+%F_%H%M%S').bak
 	  cp $cacert $cacertbackup	# Make a(n) (extra) backup
@@ -219,6 +161,8 @@ shell_var(){
 
 # Download the latest cacert.pem from curl.se (It contains an updated list of Public Root CAs)
 cacert_download() {
+	if [[ -z ${HOME_DIR-} ]]; then source ./user_config.sh; fi
+	customcacert="$HOME_DIR/.config/cacert/cacert.pem"
 	echo ""; logI " Downloading and/or locating custom PEM certificate" 
 	# Create the directory for storing cacert.pem unless existing
 	if [[ -d "$HOME_DIR/.config/cacert/" ]]; then
@@ -227,7 +171,6 @@ cacert_download() {
 	fi
 
 	# check if cacert.pem already exists...
-	customcacert="$HOME_DIR/.config/cacert/cacert.pem"
 	if [[ -f "$customcacert" ]]; then
 		logW "    Custom PEM certificate exists already. It will not be retrieved from the internet..."
 	else
@@ -239,6 +182,8 @@ cacert_download() {
 		fi
 	fi
 	logI "    Custom PEM certificate can be found at "$customcacert""
+	 # We keep a vanilla cacert.pem as we'll use it to determine if a website isn't signed by a public CA
+	 if [[ ! -f $customcacert.public ]]; then cp -f $customcacert "$customcacert.public"; fi
 }
 
 ###########################   Script SWITCHES   ###########################
@@ -247,6 +192,7 @@ while [[ $# -gt 0 ]]; do
   case $1 in
     --help|-h) help ;;
     --uninstall|-u) uninstall ;;
+	--download|-d) cacert_download ;;
    *) ;;
   esac
   shift
@@ -254,16 +200,12 @@ done
 
 ### Requirement:
 echo ""; logI " Verifying requirements..."
-
 # Check if the operating system is Darwin (macOS)
 if [ "$(uname)" != "Darwin" ]; then logE " This Script is meant to run on macOS, not on: $(uname -v)"; fi
 logI "    Running on $(get_macos_version)"
 
-# Let's identify the logged in or default user and it's home directory...
-default_user
-
-# Let's identify the default Shell interpreter and associated config file for that user...
-shell_config
+# Let's identify the logged-in user, it's home directory, it's default Shell interpreter and associated config file...
+source ./user_config.sh
 
 # Let's download cacert.pem 
 cacert_download
@@ -275,14 +217,8 @@ cacert_download
 source "$scriptpath/Keychain_InternalCAs.sh" --silent		# This command will invoke the script with variable $IntCAList which list the names of Internal Signing Root CAs from the Keychain Access in MacOS
 trustca "$customcacert"
 
-# Check AGAIN if the certificate authority file is valid after patching...
-# cacert_integrity_check.sh $customcacert
-
 # Let's inspect the file for existing environement variables & Let's reference this cacert.pem in the Shell Interpreter config file
 shell_var
 
 source "$CONFIG_FILE"
 cd "$scriptpath"
-
-
-

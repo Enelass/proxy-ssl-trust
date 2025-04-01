@@ -9,7 +9,7 @@ if [[ -n $pac_url ]]; then PAC_FILE_URL="$pac_url"; fi
 
 pac_file="/tmp/proxy.pac"           # Temporary path to store the downloaded PAC file
 testurl="https://www.google.com"    # URL for performing connectivity tests
-timeout=5                          # cURL time out in seconds for testing proxies...
+timeout=3                          # cURL time out in seconds for testing proxies...
 
 ######################## A bit of epic music never hurts ##########################
 source ./play.sh
@@ -54,6 +54,7 @@ test_proxy_connection() {
         elif [[ "$response" == "200" ]] || [[ "$response" == "301" ]] || [[ "$response" == "302" ]]; then
             logS "Proxy is working 👍\n"
             workingproxy="$proxy"       # Let's save this to instruct other scripts that a working proxy has been found
+            sleep 4
         else
             log "${RED}FAILURE${NC} - Proxy returned unknown response code: $response"
             sleep 1; echo -en "\r\033[2K\033[F\033[2K\033[F\033[2K"
@@ -69,7 +70,16 @@ download_pac_file
 if [[ -f $pac_file ]]; then
     logI "Extracting Proxy entries from the PAC file..."
     grep -Eo 'PROXY [^;"]+' "$pac_file" | sort | uniq | awk '{print $2}' |  while read -r proxy; do
-    test_proxy_connection "$proxy"
+        test_proxy_connection "$proxy"
+        if [[ -n $workingproxy ]]; then break; fi # If we have a proxy, let's end the loop to save time...
     done
-else logW "couldn't find the PAC file..."
+    if [[ -z ${workingproxy-} ]]; then # If we haven't found a proxy from the PAC, let's try again with a more permissive timeout, we really need a proxy...
+        timeout=15
+        grep -Eo 'PROXY [^;"]+' "$pac_file" | sort | uniq | awk '{print $2}' |  while read -r proxy; do
+            test_proxy_connection "$proxy"
+            if [[ -n $workingproxy ]]; then break; fi # If we have a proxy, let's end the loop to save time...
+        done
+    fi 
+else
+    logW "couldn't find the PAC file..."
 fi
