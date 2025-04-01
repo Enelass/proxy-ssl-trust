@@ -188,26 +188,28 @@ check_set_proxy_var() {
 }
 
 install_alpaca() {
-	if ! command -v alpaca > /dev/null 2>&1; then	# If Alpaca is not installed...
+	# If Alpaca is not installed...
+	if ! command -v alpaca > /dev/null 2>&1; then	
 	logI "Alpaca is not installed..."
 	
-	# Check if Homebrew is installed as we neet it to install Alpaca...
-	if ! command -v brew > /dev/null 2>&1; then handle_error "Error   - This script requires Homebrew, please install it...\nIf you're corporate, you might have it packaged by your provisioning/SOE team (e.g. JAMF)\nOtherwise, you can install it as per: https://brew.sh/"; else log "Info    -   We'll attempt installing it with $(brew --version)"; fi
+		# Check if Homebrew is installed as we neet it to install Alpaca...
+		if ! command -v brew > /dev/null 2>&1; then
+			handle_error "Error   - This script requires Homebrew, please install it...\nIf you're corporate, you might have it packaged by your provisioning/SOE team (e.g. JAMF)\nOtherwise, you can install it as per: https://brew.sh/"; else log "Info    -   We'll attempt installing it with $(brew --version)"
+		fi
 	
-	# Attempt installing Alpaca 3x times
-	brew tap samuong/alpaca
-	attempt_install samuong/alpaca/alpaca
-	
-	# Check if Alpaca was sucessfully installed (normally yes otherwise the attempt_install would have exited 1)
-	if command -v alpaca > /dev/null 2>&1; then
-		logI "$(alpaca --version) is now installed"
-		brew services start alpaca > /dev/null 2>&1
-	else
-		logE "We failed installing Alpaca, please install it manually as per: https://github.com/samuong/alpaca"
-	fi
-	
+		# Attempt installing Alpaca 3x times
+		brew tap samuong/alpaca
+		attempt_install samuong/alpaca/alpaca
+		
+		# Check if Alpaca was sucessfully installed (normally yes otherwise the attempt_install would have exited 1)
+		if command -v alpaca > /dev/null 2>&1; then
+			logI "$(alpaca --version) is now installed"
+			brew services start alpaca > /dev/null 2>&1
+		else
+			logE "We failed installing Alpaca, please install it manually as per: https://github.com/samuong/alpaca"
+		fi
 	# If Alpaca is installed...
-	else
+	else 
 		logI "$(alpaca --version) is installed"
 		logI "Checking if Alpaca is running and listening..."
 		if lsof -i -P -n -sTCP:LISTEN | grep alpaca > /dev/null 2>&1; then
@@ -217,6 +219,8 @@ install_alpaca() {
 			  logI "Alpaca is running on TCP $(lsof -i -P -n -sTCP:LISTEN | grep alpaca | head -n 1 | awk '{print $9}' )\n"
 		else 
 			logI "Alpaca does not appear to be running... Attempting to run it"
+			
+			
 			brew services start alpaca > /dev/null 2>&1
 			if [ $? -ne 0 ]; then
 				logE "Brew failed to start the service, aborting... please troubleshoot as per https://github.com/samuong/alpaca"

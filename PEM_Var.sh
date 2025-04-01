@@ -23,12 +23,9 @@ scriptpath=$(pwd)
 # List of variables to check
 variables=("GIT_SSL_CAINFO" "CURL_CA_BUNDLE" "REQUESTS_CA_BUNDLE" "AWS_CA_BUNDLE" "NODE_EXTRA_CA_CERTS" "SSL_CERT_FILE")
 
-source ./play.sh
-clear
-
 # If not invoked/sourced by another script, we'll set some variable for standalone use otherwise this would be ineritated by the source script along with $teefile...
+if [[ -z ${logI-} ]]; then source ./stderr_stdout_syntax.sh; fi
 if [[ -z "${teefile-}" ]]; then 
-    source ./stderr_stdout_syntax.sh
     echo -e "\n\nSummary: The purpose of this script is to provide various CLI on MacOS with environment variables referencing a custom PEM certificate store including public and internal Root
          certificate authorities. This will resolve number of connectivity issues where CLI not relying on the MacOS Keychain Access can still trust internally
          signed servers using an Internal Root CA and trust https connections where SSL forward inspection is performed and signed on a fly by a proxy/ngfw internal CA."

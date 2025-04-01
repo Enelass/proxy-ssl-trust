@@ -1,6 +1,6 @@
 #!/bin/zsh
 
-if [[ -z ${logI-} ]]; then source ./stderr_stdout_syntax.sh; afplay ./Two_Swords.m4a & ; clear; fi
+if [[ -z ${logI-} ]]; then source ./stderr_stdout_syntax.sh; fi
 
 ################################ VARIABLES #############################
 # List of websites to check for webconn_checks()
