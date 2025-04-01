@@ -132,7 +132,6 @@ if [[ $success_cnt -gt 0 ]]; then
     for issuer in "${ssl_issuers[@]}"; do
         logI "We have found the following issuer: $issuer"
     done
-    
     # Then compare issuer to public: /etc/ssl/cert.pem
     # And compare issuer to private: security -find
     echo "If Private: We will call PEM_VAR since we have found evidence of SSL Interception..." # source ./PEM_Var.sh
