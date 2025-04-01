@@ -12,15 +12,13 @@ testurl="https://www.google.com"    # URL for performing connectivity tests
 timeout=3                          # cURL time out in seconds for testing proxies...
 
 ######################## A bit of epic music never hurts ##########################
-source ./play.sh
-
 # Function to download the PAC file with retries
 download_pac_file() {
     local retries=3; local attempt=0; local success=false
     while [[ $attempt -lt $retries ]]; do
         attempt=$((attempt + 1))
         logI "Downloading PAC file (Attempt $attempt of $retries) from $PAC_FILE_URL..."
-        curl -o "$pac_file" "$PAC_FILE_URL" >/dev/null 2>&1
+        curl -lo "$pac_file" "$PAC_FILE_URL" >/dev/null 2>&1
         if [[ $? -eq 0 ]]; then
             logS "  PAC file downloaded successfully in $pac_file\n"
             success=true
