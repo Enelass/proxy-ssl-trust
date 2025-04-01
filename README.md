@@ -49,7 +49,7 @@ This script is licensed under a license agreement. Please refer to the [LICENSE]
 
 ## Support
 
-For support, reach out to Florian Bidabe or SecurityGenAI@cba.com.au and forward your log file located at `/tmp/CATrustDaemon.log`.
+For support, reach out to Florian Bidabe and forward your log file located in /tmp
 
 ## Author
 

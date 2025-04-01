@@ -1,7 +1,6 @@
 #!/bin/zsh
 
-afplay ./Two_Swords.m4a &
-source ./stderr_stdout_syntax.sh
+if [[ -z ${logI-} ]]; then source ./stderr_stdout_syntax.sh; afplay ./Two_Swords.m4a & ; clear; fi
 
 ################################ VARIABLES #############################
 # List of websites to check for webconn_checks()
@@ -18,7 +17,7 @@ ping_known_ips() {
   local ip_addresses=("8.8.8.8" "1.1.1.1" "208.67.222.222")
   local retries=3; local timeout=2
 
-    echo ""; logI "Now testing internet connectivity, we 'll be pinging known public IP addresses..."
+    echo ""; logI "Now testing internet connectivity, we'll be pinging known public IP addresses..."
     for ip in "${ip_addresses[@]}"; do
         if ping -c $retries -W $timeout $ip > /dev/null 2>&1; then
             logS "   Pinging $ip... It's reachable."

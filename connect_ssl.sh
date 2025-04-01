@@ -13,39 +13,12 @@ websites=("https://photonsec.com.au" "https://www.google.com")  # List of websit
         if [[ "$line" =~ $website_regex ]]; then websites+=("$line"); fi
     done < websites.config
 
-cacertURL="https://curl.se/ca/cacert.pem"
 max_success=1   # Maximum number of successful web connections to stop after webconn_checks()
 success_count=0 # Counter for successful web connections for check_website_withoutSSL()
 success_cnt=0   # Counter for successful web connections for check_website_withSSL()
 variables=("GIT_SSL_CAINFO" "CURL_CA_BUNDLE" "REQUESTS_CA_BUNDLE" "AWS_CA_BUNDLE" "NODE_EXTRA_CA_CERTS" "SSL_CERT_FILE")
 
 ################################ FUNCTIONS #############################
-
-# Download the latest cacert.pem from curl.se (It contains an updated list of Public Root CAs)
-cacert_download() {
-    echo ""; logI " Downloading and/or locating custom PEM certificate" 
-    # Create the directory for storing cacert.pem unless existing
-    if [[ -d "$HOME_DIR/.config/cacert/" ]]; then
-    else
-        mkdir -p "$HOME_DIR/.config/cacert/"
-    fi
-
-    # check if cacert.pem already exists...
-    if [[ -f "$customcacert" ]]; then
-        logW "    Custom PEM certificate exists already. It will not be retrieved from the internet..."
-    else
-        cd $(dirname "$customcacert")
-        for i in {1..3}; do curl -k -L -O "$cacertURL" >/dev/null 2>&1 && break || logW "    Download failed on attempt $i"; done   
-        if [[ ! -f "$customcacert" ]]; then
-            logW "    Something went wrong with downloading cacert.pem from ${GREENW}"$cacertURL"${NC}..."
-            logE "    Please troubleshoot the issue or contact support. Aborting!"
-        fi
-    fi
-    logI "    Custom PEM certificate can be found at "$customcacert""
-     # We keep a vanilla cacert.pem as we'll use it to determine if a website isn't signed by a public CA
-     if [[ ! -f $cacert.public ]]; then cp $cacert $cacert.public; fi
-}
-
 
 # Function to check if a website is reachable over HTTPS without checking the certificate
 check_website_withoutSSL() {
@@ -128,10 +101,12 @@ if [[ $trustissue_cnt -gt 0 ]]; then
 fi
 
 if [[ $success_cnt -gt 0 ]]; then
+    echo "issuers: $ssl_issuers"
     ssl_issuers=($(echo "${issuers[@]}" | tr ';' '\n' | sort -u))
     for issuer in "${ssl_issuers[@]}"; do
         logI "We have found the following issuer: $issuer"
     done
+    sleep 300
     # Then compare issuer to public: /etc/ssl/cert.pem
     # And compare issuer to private: security -find
     echo "If Private: We will call PEM_VAR since we have found evidence of SSL Interception..." # source ./PEM_Var.sh

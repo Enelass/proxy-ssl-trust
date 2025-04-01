@@ -1,3 +1,5 @@
+#!/bin/zsh
+
 if [[ -z ${logI-} ]]; then source ./stderr_stdout_syntax.sh; fi
 
 # Function to identify the shell interpreter and its config file
@@ -51,7 +53,8 @@ default_user() {
 	HOME_DIR=$(dscl . -read /Users/$logged_user NFSHomeDirectory | awk '{print $2}')
 	if [[ ! -d ${HOME_DIR} ]]; then
 		logE "    Home directory for "$logged_user" does not exist at "$HOME_DIR"! Aborting..."
-	else logS "    Home directory for "$logged_user" is located at "$HOME_DIR""; fi
+	else logS "    Home directory for "$logged_user" is located at "$HOME_DIR""
+	fi
 }
 
 default_user; shell_config
