@@ -21,11 +21,9 @@
 
 ################################# Variables ########################################
 version=0.3
-
-
+script_dir=$(dirname $(realpath $0))
 # If this is a standalone execution...
-if [[ -z ${logI-} ]]; then source ./stderr_stdout_syntax.sh; source ./play.sh; fi
-
+if [[ -z "${logI+x}" || -z "${logI}" ]]; then source "$script_dir/stderr_stdout_syntax.sh"; fi
 
 #################################  Functions ########################################
 # Function to display the Help Menu
@@ -33,12 +31,13 @@ help() {
     clear
     echo -e "Summary: The purpose of this script is to extract a list of internal root certificate authorities form the Keychain Manager in MacOS
          To do so, it excludes the certificates found in the Keychain manager if there are Intermediate Authorities, Certificates or are not signing CAs.
-         It only retain Root and signing CAs and build a list of it. Each Root CA certificate can then be added to certificate stores (e.g. PEM Files) for various clients that are not using the MacOS system certificate store (Keychain Manager)."
+         It only retain signing CAs and build a list of it. Each CA can then be added to certificate stores (e.g. PEM Files) for various clients that are...\n         not using the MacOS system certificate store (Keychain Access)."
     echo -e "Author:  florian@photonsec.com.au\t\tgithub.com/Enelass\nRuntime: currently running as $(whoami)\nVervion: $version\n"
     echo -e "Usage: $@ [OPTION]..."
-    echo -e "  --help, -h\tDisplay this help menu..."
-    echo -e "  --quiet\tQuiet mode when selected, it will store a list of CAs in a variable and only output a summary to stdout."
-    echo -e "  --silent\tSilent mode when invoked from another script, it will store a list of CAs in a variable but without any output to stdout/stderr."
+    echo -e "  --help, -h\t\tDisplay this help menu..."
+    echo -e "  --quiet, -q\t\tQuiet mode when selected, it will store a list of ${GREENW}Root${NC} CAs in a variable and only output a summary to stdout."
+    echo -e "  --silent, -s\t\tSilent mode when invoked from another script, it will store a list of CAs in a variable but without any output to stdout/stderr."
+    echo -e "  --intermediate, -i\tit will return a list of ${GREENW}Intermediate and Root${NC} CAs from KeyChain access. --quiet or --silent can be used on top of it!"
     echo -e "  By default, if no switches are specified, it will run standone with verbose information"
     exit 0
 }
@@ -68,12 +67,11 @@ intermediate() {
 
 
 ###########################   Script SWITCHES   ###########################
-# Switches and Executions for the initial call (regardless of when)
 while [[ $# -gt 0 ]]; do
   case $1 in
     --help|-h) help ;;
     --quiet|-q) quiet ;;
-    --silent|-q) silent ;;
+    --silent|-s) silent ;;
     --intermediate|-i) intermediate ;;
    *) ;;
   esac
@@ -108,7 +106,6 @@ fi
 
 # 1. Function to export a list of Internal Root CAs from the MacOS Keychain Manager
 keychainRootCA() {
-    local CAList
     output=$(security find-certificate -a | grep 'labl' | grep -v "com.apple")
     unset CAList; log "Info    - Inspecting MacOS Keychain to find internal Root Certificate Authorities with ability to sign other certificates..." 
     echo '-------------------------------------------------------------------------------------------'

@@ -1,6 +1,17 @@
 #!/bin/zsh
 
-if [[ -z ${logI-} ]]; then source ./stderr_stdout_syntax.sh; fi
+script_dir=$(dirname $(realpath $0))
+if [[ -z ${logI-} ]]; then source "$script_dir/stderr_stdout_syntax.sh"; fi
+
+
+################################## Functions ###################################
+
+# Function to remove stdout and stderr for every cert but the summary of it
+quiet() { quiet=1 ; exec 3>&1 4>&2 ; exec 1>/dev/null 2>&1 }
+
+# Function to add back stdout and stderr
+unquiet() { exec 1>&3 2>&4 ; exec 3>&- 4>&- }
+
 
 # Function to identify the shell interpreter and its config file
 shell_config() {
@@ -10,8 +21,7 @@ shell_config() {
 	if [[ "$DEFAULT_SHELL" ==  "$CURRENT_SHELL" ]]; then
 		logI "    Default Shell: $DEFAULT_SHELL matches the current Shell: $CURRENT_SHELL"
 	else
-		logE "    Default Shell: $DEFAULT_SHELL does not match the current Shell: $CURRENT_SHELL"
-		logI "    We'll abort, otherwise we'd set the environement variables in a Shell interpreters that isn't used by the user"
+		logW "    Default Shell: $DEFAULT_SHELL does not match the current Shell: $CURRENT_SHELL"
 	fi
 
 	# Define config file based on the shell
@@ -45,9 +55,9 @@ default_user() {
 	logged_user=$(stat -f "%Su" /dev/console)
 	if [ "$EUID" -ne 0 ]; then # Standard sser
 		logS "    Logged-in user is identified as $logged_user" 
-	else #Root User
-		logW " This script should not run as root, aborting..."
-		if [[ -n "${logged_user}" ]]; then logE " Please run it with $logged_user"; fi
+	# else #Root User
+	# 	logW " This script should not run as root, aborting..."
+	# 	if [[ -n "${logged_user}" ]]; then logE " Please run it with $logged_user"; fi
 	fi
 
 	HOME_DIR=$(dscl . -read /Users/$logged_user NFSHomeDirectory | awk '{print $2}')
@@ -57,4 +67,18 @@ default_user() {
 	fi
 }
 
+
+###########################   Script SWITCHES   ###########################
+# Switches and Executions for the initial call (regardless of when)
+while [[ $# -gt 0 ]]; do
+  case $1 in
+    --quiet|-q) quiet ;;
+   *) ;;
+  esac
+  shift
+done
+
+
+###########################       Runtime        ###########################
 default_user; shell_config
+if [[ -n "${quiet-}" ]]; then unquiet; fi

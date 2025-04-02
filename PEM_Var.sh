@@ -19,12 +19,14 @@
 ####################################################################################
 version=0.2
 cacertURL="https://curl.se/ca/cacert.pem"
-scriptpath=$(pwd)
-# List of variables to check
-variables=("GIT_SSL_CAINFO" "CURL_CA_BUNDLE" "REQUESTS_CA_BUNDLE" "AWS_CA_BUNDLE" "NODE_EXTRA_CA_CERTS" "SSL_CERT_FILE")
+script_dir=$(dirname $(realpath $0))
+
+# Original variable list
+variables=("REQUESTS_CA_BUNDLE" "SSL_CERT_FILE")
+extravarfile="ssl_vars.config"
 
 # If not invoked/sourced by another script, we'll set some variable for standalone use otherwise this would be ineritated by the source script along with $teefile...
-if [[ -z ${logI-} ]]; then source ./stderr_stdout_syntax.sh; fi
+if [[ -z ${logI-} ]]; then source "$script_dir/stderr_stdout_syntax.sh"; fi
 if [[ -z "${teefile-}" ]]; then 
     echo -e "\n\nSummary: The purpose of this script is to provide various CLI on MacOS with environment variables referencing a custom PEM certificate store including public and internal Root
          certificate authorities. This will resolve number of connectivity issues where CLI not relying on the MacOS Keychain Access can still trust internally
@@ -43,9 +45,6 @@ if [[ -z "${teefile-}" ]]; then
     timestamp() { date "+%Y-%m-%d %H:%M:%S" }
     log() { local message="$1"; echo "$(timestamp) $message" | tee -a $teefile }
     handle_error() { local message="$1"; log "$message"; exit 1 } # Error handling function
-
-    # Function to check if we're running on MacOS
-    get_macos_version() { local product_name=$(sw_vers -productName); local product_version=$(sw_vers -productVersion); local build_version=$(sw_vers -buildVersion); echo "$product_name $product_version ($build_version)" }
 fi
 
 
@@ -63,10 +62,31 @@ help() {
     exit 0
 }
 
+# Function to check if we're running on MacOS
+get_macos_version() { local product_name=$(sw_vers -productName); local product_version=$(sw_vers -productVersion); local build_version=$(sw_vers -buildVersion); echo "$product_name $product_version ($build_version)" }
+
+
+extravar(){
+	if [[ -f "$extravarfile" ]]; then 
+		# Read variables from ssl_vars.config, ignoring comments and stripping quotes
+		while IFS= read -r line; do
+		  [[ $line =~ ^# ]] && continue
+		  [[ $line =~ ^\"(.+)\"$ ]] && line="${match[1]}"
+		  
+		  # Regex to allow only uppercase letters, numbers, underscores, and dashes
+		  if [[ -n $line && $line =~ ^[A-Z0-9_-]+$ ]]; then
+		    variables+=("$line")
+		  fi
+		done < ssl_vars.config
+
+		# Remove duplicates and sort
+		variables=($(printf "%s\n" "${variables[@]}" | sort -u))
+	fi
+}
 
 uninstall(){
-	logI "    Requesting uninstallation"
-	source ./user_config.sh
+	if [[ -z ${overwrite-} ]]; then logI "    Requesting uninstallation" ; fi
+	source "$script_dir/user_config.sh"
 	pattern='.config\/cacert\/cacert.pem'
 	for var in "${variables[@]}"; do unset "$var"; done # Loop through the array and unset custom Certificate Store variable for various clients
 	if [[ -f "$CONFIG_FILE" ]]; then 
@@ -86,7 +106,7 @@ uninstall(){
 		if [[ $? -eq 0 ]]; then log "Info    -    Files downloaded by this script were cleaned-up..."; fi
 	else logE " $HOME_DIR/.config/cacert/ could not be found! You probably already have requested an uninstallation..."
 	fi
-	exit 0
+	if [[ -z ${overwrite-} ]]; then exit 0 ; fi
 }
 
 # Function to add the internal Root CAs from the OS Keychain Manager to the certificate stores (cacert.pem)
@@ -124,26 +144,26 @@ trustca() {
 	       logS "       ${BLUEW}$certname${NC} is now trusted in our custom certificate store"
 	    else logI "       ${BLUEW}$certname${NC} was already trusted in our custom certificate store"
 	    fi
-	  done <<< "$IntCAList"
+	  done <<< "$CAList"
 	  log "Success - Custom Certificate Store now includes our internal Root CAs"
 	fi
 }
 
 shell_var(){
-	log "Info    -    Looking for CA related Environment Variables in $CONFIG_FILE"
+	log "Info    -    Looking for CA related Environment Variables in Shell Config $CONFIG_FILE"
 	# Function to check if a file contains a specific variable
 	contains_variable() {
 	  local variable=$1
 	  if grep -q "^export $variable=" "$CONFIG_FILE"; then
-	    logW "      ${GREENW}$variable${NC} was already set in $CONFIG_FILE"
+	    logW "      ${GREENW}$variable${NC} was already set in in the user's Shell Config file"
 	    logI "          $(cat "$CONFIG_FILE" | grep "$variable")"
 	    logI "          If this entry is incorrect, please correct it manually with a text editor..."
 	  else
-	    logI "      ${GREENW}$variable${NC} was not set in $CONFIG_FILE. Let's add it..."
- 		echo "export "$variable"=\""$customcacert"\"" >> $CONFIG_FILE; sleep 1
+	    if [[ -z ${overwrite-} ]]; then logI "      Adding ${GREENW}$variable${NC} was not set in $CONFIG_FILE. Let's add it..." ; fi
+ 		echo "export "$variable"=\""$customcacert"\"" >> $CONFIG_FILE
  		# Check again, if we were able to add the variable
  		if grep -q "^export $variable=" "$CONFIG_FILE"; then
-		    logS "         $(cat "$CONFIG_FILE" | grep "$variable") has been added to the Shell config file..." 
+		    logS "         export ${GREENW}$variable${NC}=\""$customcacert"\" has been added to the Shell config file..." 
 	    else
 	    	logE "         $variable could not be added to $CONFIG_FILE! Aborting..."
 	    fi
@@ -158,7 +178,7 @@ shell_var(){
 
 # Download the latest cacert.pem from curl.se (It contains an updated list of Public Root CAs)
 cacert_download() {
-	if [[ -z ${HOME_DIR-} ]]; then source ./user_config.sh; fi
+	if [[ -z ${HOME_DIR-} ]]; then source "$script_dir/user_config.sh"; fi
 	customcacert="$HOME_DIR/.config/cacert/cacert.pem"
 	echo ""; logI " Downloading and/or locating custom PEM certificate" 
 	# Create the directory for storing cacert.pem unless existing
@@ -183,13 +203,18 @@ cacert_download() {
 	 if [[ ! -f $customcacert.public ]]; then cp -f $customcacert "$customcacert.public"; fi
 }
 
-###########################   Script SWITCHES   ###########################
+###########################   Script Switches and Runtime   ###########################
+
+extravar # Executing the function to find all Shell variables to set (or unset for that matter)
+
+
 # Switches and Executions for the initial call (regardless of when)
 while [[ $# -gt 0 ]]; do
   case $1 in
-    --help|-h) help ;;
-    --uninstall|-u) uninstall ;;
-	--download|-d) cacert_download ;;
+    --help|-h) help ;;								
+    --uninstall|-u) uninstall ;;					# Wipe everything this script did: custom certificate store (cacert.pem) and restore original ~/.zshrc (pre-reuntime of this script)
+	--download|-d) cacert_download ;;				# It will download and build a custom certificate store (cacert.pem), but won;t touch the Env variables in user's Shell Config 
+	--overwrite|-o) overwrite=true ; uninstall ;;	# It will force rewrite the cacert.pem + Env variables in user's Shell Config 
    *) ;;
   esac
   shift
@@ -201,21 +226,19 @@ echo ""; logI " Verifying requirements..."
 if [ "$(uname)" != "Darwin" ]; then logE " This Script is meant to run on macOS, not on: $(uname -v)"; fi
 logI "    Running on $(get_macos_version)"
 
-# Let's identify the logged-in user, it's home directory, it's default Shell interpreter and associated config file...
-source ./user_config.sh
 
-# Let's download cacert.pem 
-cacert_download
+source "$script_dir/user_config.sh"	# Let's identify the logged-in user, it's home directory, it's default Shell interpreter and associated config file...
+cacert_download	# Let's download cacert.pem 
 
 # Check if the certificate authority file is valid
 # cacert_integrity_check $customcacert
 
 # List the Internal Root CAs and patch cacert.pem with internal Root CAs
-source "$scriptpath/Keychain_InternalCAs.sh" --silent		# This command will invoke the script with variable $IntCAList which list the names of Internal Signing Root CAs from the Keychain Access in MacOS
+source "$script_dir/Keychain_InternalCAs.sh" --silent		# This command will invoke the script and return variable $CAList which lists the names of Internal Signing Root CAs from the Keychain Access in MacOS
 trustca "$customcacert"
 
 # Let's inspect the file for existing environement variables & Let's reference this cacert.pem in the Shell Interpreter config file
 shell_var
 
 source "$CONFIG_FILE"
-cd "$scriptpath"
+cd "$script_dir"

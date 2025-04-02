@@ -1,6 +1,6 @@
 #!/bin/zsh
 
-if [[ -z ${logI-} ]]; then source ./stderr_stdout_syntax.sh; fi
+if [[ -z ${logI-} ]]; then source ./stderr_stdout_syntax.sh; source ./play.sh; fi
 
 ################################ VARIABLES #############################
 # List of websites to check for webconn_checks()

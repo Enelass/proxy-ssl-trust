@@ -23,17 +23,8 @@
 #################################   Variables     ####################################
 AppName="Proxy_SSL_Trust"
 version="1.7"
-scriptpath=$(pwd)
-
-if [ "$EUID" -ne 0 ]; then # Standard User
-	# Directory for files in User-Context. It cannot patch the system
-	CDir="$HOME/Applications/$AppName"
-	teefile="$CDir/$AppName.log"
-else #Root User
-	# Directory for files in System-Context. It will patch both user and system
-	CDir="/usr/local/etc/$AppName"
-	teefile="/var/log/$AppName.log"
-fi
+script_dir=$(dirname $(realpath $0))
+teefile="/tmp/$AppName.log"
 
 ####################################### Defining functions ###########################	
 
@@ -45,45 +36,55 @@ handle_error() { local message="$1"; log "$message"; exit 1 } # Error handling f
 
 # Display the Help Menu
 help() {
-    script="$1"
-    clear
+  script="$1"
+  clear
 	echo -e "Summary: This script is designed to manage and patch certificate stores on macOS systems.\nIt's primary function is to ensure that clients trust internal Certificate Authorities.\n"
 	echo -e "Author: florian@photonsec.com.au\t\tgithub.com/Enelass\nRuntime: currently running as $(whoami)\nVersion: $version\n"
 	echo -e "Usage: $script [OPTION]..."
-	echo -e "  --help, -h\tDisplay this help menu...\n"
-	echo -e "  --list, -l\tOnly list Signing root CA certificates from the MacOS Keychain Access, This is usefull if you want to check what Root CAs are supplied with the SOE, or what Root CAs are performing SSL Inspection"
-	echo -e "  --scan, -s\tOnly scan for PEM Certificate Stores on the system. I will not patch it!\n\t\tThis can be useful if you're looking for a software certificate store but do not know where to find it\n"
-	echo -e "  --var\t\tSet default shell environement variable to a known PEM Certificate Store containing internal and Public Root CA... This is usefull if you need an easy fix for common CLI and within the user-context only...\n"
-  echo -e "  --var_uninstall\tIf this script behaved erratically or corrupted anything after using --var, we can revert back to the original/vanilla state\n"
-	echo -e "  --patch, -p\tOnly patch known PEM Certificate Stores... This is usefull if you need to re-patch known certificate stores previously scanned but without scanning again since it is time consuming...\n"
-  echo -e "  --patch_uninstall\tIf this script behaved erratically or corrupted anything after using --patch, we can revert back to the original/vanilla state\n"
+  echo -e "  --help, -h\t\tShow this help menu"
+  echo -e "  --version\t\tShow the version information"
+	echo -e "  --list, -l\t\tList all the signing Root CAs from the MacOS Keychain Access, This is usefull if you want to check what Root CAs
+	\t\tare supplied with the SOE, or what Root CAs are performing SSL Inspection"
+	echo -e "  --scan, -s\t\tOnly scan for PEM Certificate Stores on the system. I will not patch it!\n\t\t\tThis can be useful if you're looking for a software certificate store but do not know where to find it"
+	echo -e "  --var_uninstall\tRevert any changes made by --var, restoring to the original state"
+	echo -e "  --var\t\t\tSet default shell environement variable to a known PEM Certificate Store containing internal and Public Root CA...
+	\t\tThis is usefull if you need an easy fix for common CLI and within the user-context only..."
+	echo -e "  --patch_uninstall\tRevert any changes made by --patch, restoring to the original state"
+	echo -e "  --patch, -p\t\t(For Testing Only) Patch known PEM Certificate Stores (requires --scan) unless excluded...
+	\t\tThis is usefull if you want to patch known certificate stores previously scanned (not recommended)..."
 	echo -e "  By default, if no switches are specified, it will run in both User and System contexts if the user is priviledged, or user context only if unprivileged...\n  It will only look for PEM Files (certicate stores used by various clients, e.g. AWSCli, AzureCLI, Python, etc...)"
 	exit 0
 }
 
-# Switch to download the latest PEM Certificate Store (cacert.pem) from the internet (curl.se)
-# then patch it and reference it from the user's Shell config file (e.g. ~/.zshrc)
-var() {
-	switch="Set Shell and Env Variables to custom PEM certificate file"
-	var=1 # Do scan PEM Certificate Stores
-}
 
-# Switch to remove Environement variable from the user's Shell config and delete the custom PEM certificate store from the user's directory
-var_uninstall() {
-	switch="Revoking Shell and Env Variables + Deletion of custom PEM certificate file"
-	var_uninstall=1 # Do scan PEM Certificate Stores
-}
-
-# Switch to scan-only new pem files, but do not patch
-scan() {
-	switch="PEM Scanning (User and System)"
-	pemscan=1 # Do scan PEM Certificate Stores
-}
 
 # Switch to list-only signing Root CAs certificates in Keychain Access
 list() {
 	switch="Internal Root CAs listing from Keychain Access"
 	KAlist=1 # List MacOS Keychain Access certificates... 
+}
+
+# Switch to download the latest PEM Certificate Store (cacert.pem) from the internet (curl.se) then patch it and reference it from the user's Shell config file (e.g. ~/.zshrc)
+var() {
+	switch="Set SSL Env Variables to Custom Certificate Store"
+	var=1 # Set SSL Env Variables to Custom Certificate Store
+}
+
+# Switch to remove Environement variable from the user's Shell config and delete the custom PEM certificate store from the user's directory
+var_uninstall() {
+	switch="Revoking Shell and Env Variables + Deletion of custom PEM certificate file"
+	var_uninstall=1 # Revoking files and unset variables from --var
+}
+
+# Switch to scan-only new pem files, but do not patch
+scan() {
+	switch="PEM Scanning"
+	pemscan=1 # Do scan PEM Certificate Stores in User and System context
+}
+
+scan_uninstall() {
+	switch="PEM Scanning uninstallation"
+	scan_uninstall=1 # Remove all files created by --scan
 }
 
 # Switch to patch-only known (previously scanned) pem files / Quick mode
@@ -97,6 +98,9 @@ patch_uninstall() {
 	switch="PEM Patching uninstallation"
 	patch_uninstall=1
 }
+
+
+
 
 # Function to check if we're running on MacOS
 get_macos_version() { local product_name=$(sw_vers -productName); local product_version=$(sw_vers -productVersion); local build_version=$(sw_vers -buildVersion); echo "$product_name $product_version ($build_version)" }
@@ -113,14 +117,13 @@ attempt_install() {
     while [ $attempts -gt 0 ]; do
         sudo -u "$user" brew install "$package" > /dev/null
         if [ $? -eq 0 ]; then
-            log "$package installed successfully."
+            logS "$package installed successfully."
             return 0
         fi
-        log "Error   - Failed to install $package. Attempts left: $attempts"
+        logW "Failed to install $package. Attempts left: $attempts"
         attempts=$((attempts - 1))
     done
-    handle_error "Error   - Failed to install $package after 2 attempts. Exiting..."
-    exit 1
+    logE "Failed to install $package after 2 attempts. Exiting..."
 }
 
 
@@ -136,45 +139,38 @@ if [[ $# -eq 0 ]]; then
 fi
 while [[ $# -gt 0 ]]; do
   case $1 in
+  	--version|-v) echo "$0 version: $version"; exit 0 ;;
     --help|-h) help ;;
-    --list|-l) list ;;
+    --list) list ;;
 		--var) var ;;
 		--var_uninstall) var_uninstall ;;
-    --scan|-s) scan ;;
-    --patch|-p) patch ;;
+    --scan) scan ;;
+		--scan_uninstall) scan_uninstall ;;
+    --patch) patch ;;
     --patch_uninstall) patch_uninstall`` ;;
     *) echo "Error: unknown option '$1'" >&2; exit 1 ;;
   esac
   shift
 done
 
-
-# If the log files, doesn't exist, we'll create it
-if [ ! -f "$teefile" ]; then
-  touch "/tmp/$AppName.log"
-  teefile="/tmp/$AppName.log"
-fi
-
-
 # Welcoming stdin for unprivileged user
 if [ "$EUID" -ne 0 ]; then
 	clear
   echo "___________________________ - Unprivileged - _____________________________________________________________________________"
-	log "Info    - This script resolves certificate trust issues by adding Base64 Root certificate authorities"
+	logI "This script resolves certificate trust issues by adding Base64 Root certificate authorities"
 	log "          to the client certificate store (cacert.pem). This addresses situations where clients fail "
 	log "          to connect due to lack of trust of internal Certificate Authorities"
 	log "          found in the Keychain (MacOS System Certificate Store)"
 	log "          The purpose of this script is to save days if not weeks of productivity loss due to the"
 	log "          lenghty troubleshooting of certificate trust and proxy issues"
-	log "Info    -    Logs are saved in $teefile"
-	log "Info    - Execution specifics..."
-	log "Info    -    Switch selection: $(printf "%s=%s "var "${var}" var_uninstall "${var_uninstall}" "${var}" KAlist "${KAlist}" pemscan "${pemscan}" pempatch "${pempatch}" patch_uninstall "${patch_uninstall}")"
-	log "Info    -    Switch description: $switch"
-	log "Info    -    This script is being executed by `whoami` / EUID: $EUID"
+	logI "   Logs are saved in $teefile"
+	logI "Execution specifics..."
+	logI "   Switch selection: $(printf "%s=%s "var "${var}" var_uninstall "${var_uninstall}" "${var}" KAlist "${KAlist}" pemscan "${pemscan}" pempatch "${pempatch}" patch_uninstall "${patch_uninstall}")"
+	logI "   Switch description: $switch"
+	logI "   This script is being executed by `whoami` / EUID: $EUID"
 	# Scanning and Patching requires user elevation...
 	if [[ "$pemscan" || "$pempatch" || "$patch_uninstall" ]]; then
-  	log "Info    - User elevation is required. Please run again as root or sudo"
-  	exit 1
+  	logE "User elevation is required. Please run again as root or sudo"
 	fi
 fi
 
@@ -182,77 +178,51 @@ fi
 if [ "$EUID" -eq 0 ]; then
 	echo -e "\n"
 	echo "___________________________ - Elevated - ________________________________________________________________________________"
-	log "Info    - This script resolves certificate trust issues by adding Base64 Root certificate authorities"
+	logI "This script resolves certificate trust issues by adding Base64 Root certificate authorities"
 	log "          to the client certificate store (cacert.pem). This addresses situations where clients fail "
 	log "          to connect due to lack of trust of internal Certificate Authorities"
 	log "          found in the Keychain (MacOS System Certificate Store)"
 	log "          The purpose of this script is to save days if not weeks of productivity loss due to the"
 	log "          lenghty troubleshooting of certificate trust and proxy issues"
-	log "Info    -    Logs are saved in $teefile"
-	log "Info    -    Config files will be stored in $CDir/"
-	log "Info    - Execution specifics..."
-	log "Info    -    Switch selection: $(printf "%s=%s "var "${var}" var_uninstall "${var_uninstall}" "${var}" KAlist "${KAlist}" pemscan "${pemscan}" pempatch "${pempatch}" patch_uninstall "${patch_uninstall}")"
-	log "Info    -    Switch description: $switch"
-	log "Info    -    This script is running elevated as `whoami`"
+	logI "   Logs are saved in $teefile"
+	logI "Execution specifics..."
+	logI "   Switch selection: $(printf "%s=%s "var "${var}" var_uninstall "${var_uninstall}" "${var}" KAlist "${KAlist}" pemscan "${pemscan}" pempatch "${pempatch}" patch_uninstall "${patch_uninstall}")"
+	logI "   Switch description: $switch"
+	logI "   This script is running elevated as `whoami`"
 	logged_user=$(stat -f "%Su" /dev/console)
-	if [[ ! -z "${logged_user-}" ]]; then log "Info    -    Logged-in user is $logged_user"; fi
+	if [[ ! -z "${logged_user-}" ]]; then logI "   Logged-in user is $logged_user"; fi
 fi
 
-log "Info    - Verifying System requirements..."
+logI "Verifying System requirements..."
 # Check if the operating system is Darwin (macOS)
 if [ "$(uname)" != "Darwin" ]; then log "Error   - This Script is meant to run on macOS, not on: $(uname -v)"; exit 1; fi
-log "Info    -      Running on $(get_macos_version)"
-
-# Set proxy in case we need to download and install anything....
-export HTTPS_PROXY=http://cba.proxy.prismaaccess.com:8080; export HTTP_PROXY=http://cba.proxy.prismaaccess.com:8080
-# Let's search for cacert.pem
-PATH="/opt/homebrew/bin:$PATH"
+logI "     Running on $(get_macos_version)"
 
 # Check if Curl and Homebrew are installed
-if ! command_exists brew; then handle_error "Info    - Homebrew is not installed. Please install it via Self-Service"; exit 1; else log "Info    -      $(brew --version | awk {'print $1, $2'}) is already installed."; fi
-if ! command_exists curl; then log "Info    - curl is not installed. Installing curl..."; attempt_install curl; else log "Info    -      $(curl -V | head -n 1 | awk '{print $1, $2}') is already installed."; fi
+if ! command_exists brew; then logE " Homebrew is not installed. Please install it..."; else logI "     $(brew --version | awk {'print $1, $2'}) is already installed."; fi
+if ! command_exists curl; then logI "cURL is not installed. Installing curl..."; attempt_install curl; else logI "     $(curl -V | head -n 1 | awk '{print $1, $2}') is already installed."; fi
 
-
-###########################   File creation and Db of cacert.pem on the system   ###########################
-cacert_syslist="$CDir/cacert_syslist.csv"						# A new generated list of cacert.pem files found in the system context
-cacert_userlist="$CDir/cacert_userlist.csv"					# A new generated list of cacert.pem files found in the user context
-cacert_sysdb="$CDir/cacert_sysdb.csv" 							# The system Db file (with metadata)
-cacert_userdb="$CDir/cacert_userdb.csv" 						# The user Db file (with metadata)
-cacertdb="$CDir/cacertdb.csv" 											# The Final Db file (with metadata), combining user and system files
-prevcacert_sysdb="$CDir/cacert_sysdb.backup.csv"		# The previous System Db File we use to compare against current to skip patched cacert.pem
-prevcacert_userdb="$CDir/cacert_userdb.backup.csv"	# The previous user Db File we use to compare against current to skip patched cacert.pem
-prevcacertdb="$CDir/cacertdb.backup.csv"						# The previous Db File we use to compare against current to skip patched cacert.pem
-
-
-
-
-############################  Env Variables and Custom downloaded PEM #############################
-if [[ ${var} -eq 1 ]]; then ./PEM_Var.sh; fi 
-if [[ ${var_uninstall} -eq 1 ]]; then ./PEM_Var.sh --uninstall; fi 
+########################  Env Variables and Custom downloaded PEM #################
+if [[ ${var} -eq 1 ]]; then source "$script_dir/PEM_Var.sh"; exit; fi 
+if [[ ${var_uninstall} -eq 1 ]]; then source "$script_dir/PEM_Var.sh" --uninstall; exit; fi 
 
 
 ############################  SCANNING MacOS PEM Files #############################
-if [[ ${pemscan} -eq 1 ]]; then
-	log "Info    -     We will now proceed to scan the MacOS volume and look for PEM certificate stores"
-	source ./PEM_Scanner.sh
-	if [[ ! -f "$cacertdb" ]]; then
-		log "Error   - Scanning appear to have failed: cannot find a list of certificate store (PEM files) to scan at $cacertdb...\n\t\t\t      Please run this script again with the --scan switch or no switches to force a new scan"
-		exit 1 
-	fi
-	log "Info    -     Opening the list of found pem files on your system in your default CSV editor"
-	open $(dirname "$cacertdb"); open $cacertdb; open $teefile
-fi
+if [[ ${pemscan} -eq 1 ]]; then source "$script_dir/PEM_Scanner.sh"; exit; fi
+if [[ ${scan_uninstall} -eq 1 ]]; then source "$script_dir/PEM_Scanner.sh" --uninstall; exit; fi
 
-##################  LISTING Internal Root CA from Keychain #######################
+##################  LISTING Internal Root CA from Keychain ########################
 if [[ ${KAlist} -eq 1 ]]; then
-	log "Info    -     We will now look for Internal Root CA in the Keychain Access. "
-	source ./Keychain_InternalCAs.sh --quiet
-	if [[ -z "${IntCAList-}" ]]; then log "Error    -    We couldn't find a list of Internal signing Root CAs to add to the various PEM certificate stores"; exit 1; fi
+	logI "    We will now look for Internal Root CA in the Keychain Access. "
+	source "$script_dir/Keychain_InternalCAs.sh" --quiet
+	if [[ -z "${IntCAList-}" ]]; then logE "   We couldn't find a list of Internal signing Root CAs to add to the various PEM certificate stores"; fi
 fi
 
 ######################  PATCHING PEM Certificate Stores ##############################
-if [[ ${pempatch} -eq 1 ]]; then source ./PEM_Patcher.sh; fi
-if [[ ${patch_uninstall} -eq 1 ]]; then source ./PEM_Patcher.sh --uninstall; fi
+if [[ ${pempatch} -eq 1 ]]; then source "$script_dir/PEM_Patcher.sh"; exit; fi
+if [[ ${patch_uninstall} -eq 1 ]]; then source "$script_dir/PEM_Patcher.sh" --uninstall; exit; fi
+
+
 
 
 

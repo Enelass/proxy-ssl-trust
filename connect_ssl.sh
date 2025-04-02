@@ -1,6 +1,5 @@
 #!/bin/zsh
-
-if [[ -z ${logI-} ]]; then source ./stderr_stdout_syntax.sh; fi
+if [[ -z ${logI-} ]]; then clear; source ./stderr_stdout_syntax.sh; source ./play.sh; fi
 
 
 ################################ VARIABLES #############################
@@ -29,7 +28,7 @@ check_website_withoutSSL() {
         ((success_count++))
     else
         logW "    Connection failed: ${GREENW}$url${NC}"
-        sleep 2; echo -en "\r\033[2K\033[F\033[2K\033[F\033[2K"
+        sleep 1; echo -en "\r\033[2K\033[F\033[2K\033[F\033[2K"
     fi
     
 }
@@ -101,19 +100,39 @@ if [[ $trustissue_cnt -gt 0 ]]; then
 fi
 
 if [[ $success_cnt -gt 0 ]]; then
-    echo "issuers: $ssl_issuers"
-    ssl_issuers=($(echo "${issuers[@]}" | tr ';' '\n' | sort -u))
+    ssl_issuers=()
+    while IFS= read -r issuer; do
+        # Append each issuer to the array
+        ssl_issuers+=("$issuer")
+    done < <(echo "$issuers" | tr ';' '\n' | sort -u | grep -v '^$')
     for issuer in "${ssl_issuers[@]}"; do
-        logI "We have found the following issuer: $issuer"
+        if cat /etc/ssl/cert.pem | grep $issuer; then # We're lucky this list contains metadata, otherwise we'd have to use openssl to displau each issuer from the Base64...
+            logI "We have found the following ${GREENW}public${NC} issuer: $issuer"
+            PublicCAOnly=true
+        else
+            logI "The certificate issuer $issuer is not public..."
+            source ./Keychain_InternalCAs.sh --intermediate --silent  #Retrieves a list of Internal Root and Intermediate CAs silently
+            if echo $CAList | grep -q $issuer; then
+                logS "The certificate issuer $issuer is ${GREENW}internal${NC}"
+                NeedCustomCacert=true
+            else
+                logW "The certificate issuer $issuer is not internal either..."
+            fi
+        fi
     done
-    sleep 300
-    # Then compare issuer to public: /etc/ssl/cert.pem
-    # And compare issuer to private: security -find
-    echo "If Private: We will call PEM_VAR since we have found evidence of SSL Interception..." # source ./PEM_Var.sh
-    logI "If Public: We have found no evidence that SSL Forward Inspection is being performed..."
-    # logI "If you wish to set a customer Certificate Authority with internal Root signing CAs,"
-    # logI "Please add your internal website, and filtered website to the \$websites variable in $0"
-    # logI "Alternatively, call ./PEM_Var and it will do just that..."
+
+    if [[ -n $NeedCustomCacert ]]; then
+        logI "We have found website(s) signed by internal certificate authority(ies)"
+        logI "    We need to create a Custom certificate Store (PEM file) and add our internal signing Root CAs"
+        logI "    then we'll create persistent environment variables pointing to this custom Certificate Store to solve of SSL trust issues..."
+        # source ./PEM_Var.sh UNCOMMENT ME AFTER TESTING...
+    fi
+    if [[ -z ${NeedCustomCacert-} && -n $PublicCAOnly ]]; then
+        logI "All websites were signed by Public CAs and not internal ones..."
+        logW "We won't therefore create a customer Certificate Store including internal CAs nor reference it in your Shell config file..."
+        logI "If you still believe SSL interception is in place in your environment, "
+        logI "please add SSL inspected websites to $(realpath ./websites.config)"
+    fi
 fi
 
 

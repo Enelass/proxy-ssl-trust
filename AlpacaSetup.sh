@@ -219,8 +219,13 @@ install_alpaca() {
 			  logI "Alpaca is running on TCP $(lsof -i -P -n -sTCP:LISTEN | grep alpaca | head -n 1 | awk '{print $9}' )\n"
 		else 
 			logI "Alpaca does not appear to be running... Attempting to run it"
-			
-			
+			if brew list Alpaca; then
+			 	logI "Alpaca was installed using Homebrew"
+			 else
+			 	logW "Alpaca was not installed using Homebrew..."
+			 	brew tap samuong/alpaca
+			 	brew install alpaca > /dev/null 2>&1
+			 fi
 			brew services start alpaca > /dev/null 2>&1
 			if [ $? -ne 0 ]; then
 				logE "Brew failed to start the service, aborting... please troubleshoot as per https://github.com/samuong/alpaca"

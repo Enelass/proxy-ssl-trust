@@ -1,5 +1,6 @@
 #!/bin/zsh
-if [[ -z ${teefile-} || ! -f "$teefile" ]]; then teefile="/tmp/tmp.logfile.log"; fi
+# Some due credits, lest we forget: https://www.zdnet.com/article/without-dennis-ritchie-there-would-be-no-jobs/
+if [[ -z ${teefile-} ]]; then teefile="/tmp/tmp.logfile.log"; fi
 
 # ANSI color codes for stdout status code
 RED='\033[1;31m'
@@ -16,7 +17,7 @@ timestamp() {
 
 logonly() { 
     local message="$1"
-    echo "$(timestamp) Info - $message" >> "$teefile" 
+    echo "$(timestamp) $message" >> "$teefile" 
 }
 
 log() { 
