@@ -10,7 +10,26 @@ GREENW='\033[38;5;22;48;5;15m'
 BLUEW='\033[0;34;47m'
 NC='\033[0m' # No Color
 
+# Function to remove stdout and stderr for every cert but the summary of it
+quiet() {
+    quiet=1
+    exec 3>&1 4>&2
+    exec 1>/dev/null 2>&1
+}
 
+# Function to add back stdout and stderr
+unquiet() {
+    exec 1>&3 2>&4
+    exec 3>&- 4>&-
+}
+
+# Function to remove stdout and stderr for everything...
+silent() {
+    quiet; silent=1
+}
+
+
+# Functions to add colored syntax to stdout...
 timestamp() { 
     date "+%Y-%m-%d %H:%M:%S" 
 }

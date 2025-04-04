@@ -25,7 +25,7 @@ AppName="Proxy_SSL_Trust"
 version="1.7"
 script_dir=$(dirname $(realpath $0))
 teefile="/tmp/$AppName.log"
-
+invoked=true	# To instruct other scripts that we sourced them... 
 ####################################### Defining functions ###########################	
 
 # Logging function

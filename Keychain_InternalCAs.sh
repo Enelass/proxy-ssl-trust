@@ -23,6 +23,7 @@
 version=0.3
 script_dir=$(dirname $(realpath $0))
 # If this is a standalone execution...
+if [[ -z "${teefile-}" ]]; then AppName="KeychainInternalCAs"; teefile="/tmp/$AppName.log"; fi
 if [[ -z "${logI+x}" || -z "${logI}" ]]; then source "$script_dir/stderr_stdout_syntax.sh"; fi
 
 #################################  Functions ########################################
@@ -42,69 +43,37 @@ help() {
     exit 0
 }
 
-# Function to remove stdout and stderr for every cert but the summary of it
-quiet() {
-    quiet=1
-    exec 3>&1 4>&2
-    exec 1>/dev/null 2>&1
+# If switch --intermediate was selected, we'll set that value for the runtime
+intermediate() { intermediate=1 }
+
+
+# Function to list MacOS version
+get_macos_version() { local product_name=$(sw_vers -productName); local product_version=$(sw_vers -productVersion); local build_version=$(sw_vers -buildVersion); echo "$product_name $product_version ($build_version)" }
+
+
+# Function to check if a certificate is a Signing CA
+function is_signing_ca {
+    local base64_cert=$1
+    # Extract Basic Constraints and Key Usage extensions
+    local basic_constraints=$(openssl x509 -in <(security find-certificate -c "$base64_cert" -p) -text -noout | grep -A 1 "X509v3 Basic Constraints" | grep 'CA:TRUE')
+    local key_usage=$(openssl x509 -in <(security find-certificate -c "$base64_cert" -p) -text -noout | grep -A 1 'X509v3 Key Usage' | tail -n 1)
+    # Check if CA:TRUE is present in Basic Constraints
+    if [[ "$basic_constraints" == *"CA:TRUE"* ]]; then
+        # Check if Certificate Sign is present in Key Usage
+        if [[ "$key_usage" == *"Certificate Sign"* ]]; then
+            logS "$base64_cert has X509v3 Basic Constraints set to CA:TRUE and Key Usage set to Certificate Sign. It is a \"signing\" CA"
+            return 0
+        else
+            logI "$base64_cert has X509v3 Basic Constraints set to CA:TRUE but Key Usage is \"not\" set to Certificate Sign. It isn't a signing CA"
+            return 1
+        fi
+    else
+        logI "$base64_cert does not have X509v3 Basic Constraints set to CA:TRUE, hence it isn't a Certificate Authority"
+        return 1
+    fi
 }
 
-# Function to add back stdout and stderr
-unquiet() {
-    exec 1>&3 2>&4
-    exec 3>&- 4>&-
-}
-
-# Function to remove stdout and stderr for everything...
-silent() {
-    quiet; silent=1
-}
-
-intermediate() {
-    intermediate=1
-}
-
-
-
-###########################   Script SWITCHES   ###########################
-while [[ $# -gt 0 ]]; do
-  case $1 in
-    --help|-h) help ;;
-    --quiet|-q) quiet ;;
-    --silent|-s) silent ;;
-    --intermediate|-i) intermediate ;;
-   *) ;;
-  esac
-  shift
-done
-
-# If not invoked/sourced by another script, we'll set some variable for standalone use...
-if [[ -z "${teefile-}" ]]; then 
-    clear
-    echo -e "Summary: The purpose of this script is to extract a list of internal root certificate authorities form the Keychain Manager in MacOS
-         To do so, it excludes the certificates found in the Keychain manager if there are Intermediate Authorities, Certificates or are not signing CAs.
-         It only retain Root and signing CAs and build a list of it. Each Root CA certificate can then be added to certificate stores (e.g. PEM Files)
-         for various clients that are not using the MacOS system certificate store (Keychain Manager)."
-    echo -e "Author:  florian@photonsec.com.au\t\tgithub.com/Enelass\nRuntime: currently running as $(whoami)"
-    echo "This script was invoked directly... Setting variable for standalone use..."
-    
-    #################################   Variables     ####################################
-    AppName="KeychainInternalCAs"
-    teefile="/tmp/$AppName.log"
-    version=0.2
-    ######################################################################################
-
-    ####################################### Defining functions ###########################
-    # Logging function
-    timestamp() { date "+%Y-%m-%d %H:%M:%S" }
-    log() { local message="$1"; echo "$(timestamp) $message" | tee -a $teefile }
-    handle_error() { local message="$1"; log "$message"; exit 1 } # Error handling function
-
-    # Function to check if we're running on MacOS
-    get_macos_version() { local product_name=$(sw_vers -productName); local product_version=$(sw_vers -productVersion); local build_version=$(sw_vers -buildVersion); echo "$product_name $product_version ($build_version)" }
-fi
-
-# 1. Function to export a list of Internal Root CAs from the MacOS Keychain Manager
+# Function to list Root CAs from Keychain
 keychainRootCA() {
     output=$(security find-certificate -a | grep 'labl' | grep -v "com.apple")
     unset CAList; log "Info    - Inspecting MacOS Keychain to find internal Root Certificate Authorities with ability to sign other certificates..." 
@@ -131,6 +100,7 @@ keychainRootCA() {
     echo -e "-------------------------------------------------------------------------------------------\n\nThe below is a list of Internal Root CAs with the ability to sign other certificate:\nThese are most likely used to sign internal servers or to perform SSL Forward Inspection (MITM)\n\n$CAList"    
 }
 
+# Function to list Intermediate and Root CAs from Keychain
 keychainIntCA() {
     output=$(security find-certificate -a | grep 'labl' | grep -v "com.apple")
     unset CAList; logI "Inspecting MacOS Keychain to find internal Certificate Authorities (Intermediate and Root) with ability to sign other certificates..." 
@@ -151,27 +121,31 @@ keychainIntCA() {
     echo -e "-------------------------------------------------------------------------------------------\n\nThe below is a list of Internal Root CAs with the ability to sign other certificate:\nThese are most likely used to sign internal servers or to perform SSL Forward Inspection (MITM)\n\n$CAList"
 }
 
-# 2. Function to check if a certificate is a Signing CA
-function is_signing_ca {
-    local base64_cert=$1
-    # Extract Basic Constraints and Key Usage extensions
-    local basic_constraints=$(openssl x509 -in <(security find-certificate -c "$base64_cert" -p) -text -noout | grep -A 1 "X509v3 Basic Constraints" | grep 'CA:TRUE')
-    local key_usage=$(openssl x509 -in <(security find-certificate -c "$base64_cert" -p) -text -noout | grep -A 1 'X509v3 Key Usage' | tail -n 1)
-    # Check if CA:TRUE is present in Basic Constraints
-    if [[ "$basic_constraints" == *"CA:TRUE"* ]]; then
-        # Check if Certificate Sign is present in Key Usage
-        if [[ "$key_usage" == *"Certificate Sign"* ]]; then
-            logS "$base64_cert has X509v3 Basic Constraints set to CA:TRUE and Key Usage set to Certificate Sign. It is a \"signing\" CA"
-            return 0
-        else
-            logI "$base64_cert has X509v3 Basic Constraints set to CA:TRUE but Key Usage is \"not\" set to Certificate Sign. It isn't a signing CA"
-            return 1
-        fi
-    else
-        logI "$base64_cert does not have X509v3 Basic Constraints set to CA:TRUE, hence it isn't a Certificate Authority"
-        return 1
-    fi
-}
+
+###############################   RUNTIME   ################################
+# If not invoked/sourced by another script, we'll set some variable for standalone use...
+if [[ -z "${invoked-}" ]]; then 
+    clear
+    echo -e "Summary: The purpose of this script is to extract a list of internal root certificate authorities form the Keychain Manager in MacOS
+         To do so, it excludes the certificates found in the Keychain manager if there are Intermediate Authorities, Certificates or are not signing CAs.
+         It only retain Root and signing CAs and build a list of it. Each Root CA certificate can then be added to certificate stores (e.g. PEM Files)
+         for various clients that are not using the MacOS system certificate store (Keychain Manager)."
+    echo -e "Author:  florian@photonsec.com.au\t\tgithub.com/Enelass\nRuntime: currently running as $(whoami)"
+    echo "This script was invoked directly... Setting variable for standalone use..."
+fi
+
+
+###########################   Script SWITCHES   ###########################
+while [[ $# -gt 0 ]]; do
+  case $1 in
+    --help|-h) help ;;
+    --quiet|-q) quiet ;;
+    --silent|-s) silent ;;
+    --intermediate|-i) intermediate ;;
+   *) ;;
+  esac
+  shift
+done
 
 
 ### Requirement:

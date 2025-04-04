@@ -12,14 +12,15 @@
 # for easy tracking and comparison of changes
 # INITIAL RELEASE DATE: 11-Mar-2025
 # AUTHOR: Florian Bidabe
-# LAST RELEASE DATE: 11-Mar-2025
+# LAST RELEASE DATE: 04-Apr-2025
 # VERSION: 0.1
-# REVISION: 0.1
+# REVISION: 0.4
 #########################################################
 
 
 
 # Condition to verify is teefile (the log file) is defined. If not, this script wasn't sourced/called/invoked by the main, so we'll set a few vars
+script_name="$0"
 script_dir=$(dirname $(realpath $0))
 if [[ -z ${logI-} ]]; then
 	clear
@@ -28,21 +29,66 @@ if [[ -z ${logI-} ]]; then
 	source "$script_dir/stderr_stdout_syntax.sh"
 fi
 if [[ -z "${HOME_DIR-}" ]]; then source "$script_dir/user_config.sh" --quiet; fi
-if [[ "$EUID" -ne 0 ]]; then logE "User elevation is required. Please run again as root or sudo"; fi
 
 ################################## Variables ###################################
 CDir="$HOME_DIR/Applications/proxy_ssl_trust/scan"		# Where these files will be stored
-pem_syslist="$CDir/pem_syslist.csv"				# A new generated list of pem file(s) files found in the system context
-pem_userlist="$CDir/pem_userlist.csv"			# A new generated list of pem file(s) files found in the user context
-pem_sysdb="$CDir/pem_sysdb.csv" 				# The system Db file (with metadata)
-pem_userdb="$CDir/pem_userdb.csv" 				# The user Db file (with metadata)
-pemdb="$CDir/pemdb.csv" 						# The Final Db file (with metadata), combining user and system files
+pem_syslist="$CDir/pem_syslist.csv"						# A new generated list of pem file(s) files found in the system context
+pem_userlist="$CDir/pem_userlist.csv"					# A new generated list of pem file(s) files found in the user context
+pem_sysdb="$CDir/pem_sysdb.csv" 							# The system Db file (with metadata)
+pem_userdb="$CDir/pem_userdb.csv" 						# The user Db file (with metadata)
+pemdb="$CDir/pemdb.csv" 											# The Final Db file (with metadata), combining user and system files
 prevpem_sysdb="$CDir/pem_sysdb.backup.csv"		# The previous System Db File we use to compare against current to skip patched pem file(s)
 prevpem_userdb="$CDir/pem_userdb.backup.csv"	# The previous user Db File we use to compare against current to skip patched pem file(s)
-prevpemdb="$CDir/pemdb.backup.csv"				# The previous Db File we use to compare against current to skip patched pem file(s)
+prevpemdb="$CDir/pemdb.backup.csv"						# The previous Db File we use to compare against current to skip patched pem file(s)
 
 
 ################################## Functions ###################################
+
+# Help function to display usage guide and available options
+help() {
+  cat << EOF
+Usage: $script_name [OPTIONS]
+
+This script searches and enriches a list of PEM certificate authority files found in the MacOS System
+and User directories. It creates a CSV list of these files and performs integrity checks to verify their authenticity.
+The script also maintains a database of these files, allowing for easy tracking and comparison of changes.
+
+Options:
+  --system        Search for PEM Certificate Stores in the System context excluding User directories.
+  --user          Search for PEM Certificate Stores in the User context.
+  --quick         Perform a quick scan (avoiding a full rescan of the system).
+  --verbose       Enable verbose logging and open the log file with detailed information.
+  --uninstall     Remove all files created by the script in the specified directory.
+  --help          Display this help message and exit.
+
+Examples:
+  
+  $script_name --quick
+    Search for PEM files in the current User directory and system and generate a CSV list.
+
+  sudo $script_name --user
+    Search for PEM files in all Users directories and generate a CSV list.
+
+  sudo $script_name --system
+    Search for PEM files in the MacOS System directory and generate a CSV list.
+
+  sudo $script_name --quick --system
+    Perform a quick search for PEM files in the System context without forcing a full rescan.
+
+  sudo $script_name --uninstall
+    Uninstall and remove all files created by the script.
+
+Author:
+  Florian Bidabe (florian@photonsec.com.au)
+  Initial Release Date: 11-Mar-2025
+  Last Release Date: 04-Apr-2025
+  Version: 0.1
+  Revision: 0.4
+
+EOF
+}
+
+
 # Function to search for PEM files (CLI certificate store) on the MacOS filesystem
 enrich_list() {
 	local pemlist="$1" ; local pemdb="$2" ; local exclude
@@ -91,6 +137,12 @@ enrich_list() {
 
 # Function to search PEM Sertificate Stores in the System using locate
 system() {
+	if [[ "$EUID" -ne 0 && -z $quick ]]; then
+		logW "User elevation is required to scan the system"
+		logW "If you wish to scan only the current user, please run ${GREENW}sudo $script_name${NC}...\n"
+		help
+		exit 1
+	fi
 	logI "Searching for PEM Certificate Stores (e.g. pem file(s)) in MacOS ${BLUEW}System-Wide${NC} excluding User directories..."
 	echo > "$pem_syslist" # Reset System file...
 	logI "    Searching in System context using \`locate\` (All disk but User directories)..."
@@ -105,8 +157,8 @@ system() {
 			logI "    \`locatedb\` has finished indexing system files..."
 		fi
 	else
-		logI "    Initialising \`locatedb\`, please wait..."; 
-		cd /
+		logI "    Initialising \`locatedb\`, please wait..."; cd /
+		if [[ "$EUID" -ne 0 ]]; then logW "It looks like locate.updatedb was never initialised so using it might fail... to initialise it, run $script_name as root/sudo"; fi
 		/usr/libexec/locate.updatedb 2>/dev/null 
 		echo > $CDir/locate.enabled; chflags hidden $CDir/locate.enabled
 		logI "    \`locatedb\` has finished indexing system files..."
@@ -124,10 +176,17 @@ system() {
 	sed -i '' '/^$/d' "$pem_syslist"				# Remove empty lines
 	enrich_list	"$pem_syslist" "$pem_sysdb"			# Create a new System Db from CSV List 
 	logS "    System PEM files were successfully processed!"
-	logI "    Files are listed in $pem_syslist and ${GREENW}$pem_sysdb${NC}"
+	logI "    Files are listed in ${GREENW}$CDir/cache${NC}"
 }
 
-user-context() {
+user_context() {
+	if [[ "$EUID" -ne 0 && -z $quick ]]; then
+		logW "User elevation is required to scan all user directoties"
+		logW "If you wish to scan only the current user, please run ${GREENW}$script_name --quick --user${NC}\n"
+		help
+		exit 1
+	fi
+
 	logI "Searching for PEM Certificate Stores (pem files) in MacOS ${BLUEW}User Context${NC}..."
 	logI "    locatedb cannot index user files (security risk) unless we disable SIP Integrity Check. We'll use GNU \`find\` instead..."
 	echo > "$pem_userlist" # Reset file for the listing of PEM certificate stores in user directories...
@@ -154,9 +213,11 @@ user-context() {
 	sed -i '' '/^$/d' "$pem_userlist"					 # Remove empty lines
 	enrich_list	"$pem_userlist" "$pem_userdb"			 # Create a new User Db from CSV List 
 	logS "    The user certificate stores were sucessfully processed!"
-	logI "    Files are listed in $pem_userlist and ${GREENW}$pem_userdb${NC}"
+	logI "    Files are listed in ${GREENW}$CDir/cache${NC}"
 }
 
+
+# Function to delete all generated files
 uninstall() {
 	logI "    User requested to ${BLUEW}--scan_uninstall${NC}. Removing all files created by the --scan option. Please wait..."
 	rm -R -f "$CDir" >/dev/null 2>&1
@@ -167,53 +228,82 @@ uninstall() {
 	fi
 }
 
+# Function to consolidate and clean-up all files
+file-cleanup() {
+	#Keep previous Db for comparison
+	if [[ -f "$pemdb" ]]; then mv $pemdb $prevpemdb; fi
+
+		# Concatenating both the system Db (if any) and user Db
+	if [[ -f "$pem_sysdb" && -f "$pem_userdb" ]]; then
+		cat "$pem_sysdb" <(tail -n +2 "$pem_userdb") > "$pemdb"
+	fi
+	if [[ -f "$pem_sysdb" && ! -f "$pem_userdb" ]]; then
+		cp "$pem_sysdb" > "$pemdb"
+	fi
+	if [[ ! -f "$pem_sysdb" && -f "$pem_userdb" ]]; then
+		cp "$pem_userdb" > "$pemdb"
+	fi
+
+	# Create a list of all pem files found
+	cd "$CDir";
+	if [[ -f "$pem_userlist" && ! -f "$pem_syslist" ]]; then cat "$pem_userlist" > pemlist.txt; fi 
+	if [[ -f "$pem_syslist" && ! -f "$pem_userlist" ]]; then cat "$pem_syslist" > pemlist.txt; fi
+	if [[ -f "$pem_syslist" && -f "$pem_userlist" ]]; then
+		cat "$pem_userlist" > pemlist.txt
+		cat "$pem_syslist" >> pemlist.txt
+	fi
+
+	# Move secondary files to  
+	if [ ! -d "$CDir/cache" ]; then mkdir -p "$CDir/cache"; fi
+	if [[ -f "$pem_userlist" ]]; then mv "$pem_userlist" "$CDir/cache"; fi 
+	if [[ -f "$pem_syslist" ]]; then mv "$pem_syslist" "$CDir/cache"; fi 
+	if [[ -f "$pem_userdb" ]]; then mv "$pem_userdb" "$CDir/cache"; fi 
+	if [[ -f "$pem_sysdb" ]]; then mv "$pem_sysdb" "$CDir/cache"; fi 
+
+	# Silently clean up DB tmp files to only keep the consolidated and enriched list of PEM certificate stores
+	# rm $pem_sysdb $pem_userdb $pem_userlist $pem_syslist $prevpem_sysdb $prevpem_userdb >/dev/null 2>&1 # Clean-up temp files, keep only consolidated Db and pemlist
+
+	# If this script ran elevated, we need to allow the users to edit or dispose of the files...
+	# E.g. the user might want to change some Exclude flags to 0, so be able to ./PEM_patch them...
+	if [[ "$EUID" -eq 0 ]]; then
+		chown -R  "$logged_user" "$(dirname "$CDir")"
+		chmod -R 755  "$(dirname "$CDir")"
+	fi
+}
 
 ################################## Runtime #####################################
 ###########################   Script SWITCHES   ###########################
 # Switches and Executions for the initial call (regardless of when)
 while [[ $# -gt 0 ]]; do
   case $1 in
-    --uninstall) uninstall ;;
-	--system) system ; exit 0 ;;
-	--user) user-context ; exit 0 ;;
+  --uninstall) uninstall ;;
+	--system) system_only=1 ;;
+	--user) user_only=1;;
 	--quick) quick=1 ;;
 	--verbose) verbose=1 ;;
+	--help) help ; exit 0 ;;
    *) ;;
   esac
   shift
 done
 
+if [[ "$EUID" -ne 0 && -z $quick ]]; then
+	logW "User elevation is required. Please run again as root or sudo\n"
+	help
+	exit 1
+fi
 
-# Create a list of pem files
+# Create directory it it doesn't exists...
 if [ ! -d "$CDir" ]; then mkdir -p "$CDir"; fi
 
 # Searching in System Context
-system
+if [[ -z ${user_only-} ]]; then system; fi 
 
 # Scanning in User context
-user-context
+if [[ -z ${system_only-} ]]; then user_context; fi
 
-
-# Concatenating both the system Db (if any) and user Db
-if [[ -f "$pemdb" ]]; then mv $pemdb $prevpemdb; fi
-if [[ -f "$pem_sysdb" ]]; then
-	cat "$pem_sysdb" <(tail -n +2 "$pem_userdb") > "$pemdb"
-else
-	cp "$pem_userdb" > "$pemdb"
-fi
-
-
-# Create a list of all pem files found
-cd "$CDir";
-if [[ -f "$pem_userlist" ]]; then cat "$pem_userlist" > pemlist.txt; fi 
-if [[ -f "$pem_syslist" ]]; then cat "$pem_syslist" >> pemlist.txt; fi
-
-
-# Silently clean up DB tmp files to only keep the consolidated and enriched list of PEM certificate stores
-# rm $pem_sysdb $pem_userdb $pem_userlist $pem_syslist $prevpem_sysdb $prevpem_userdb >/dev/null 2>&1 # Clean-up temp files, keep only consolidated Db and pemlist
-sleep 1;
-chown -R  "$logged_user" "$(dirname "$CDir")"
-chmod -R 755  "$(dirname "$CDir")"
+# File cleanup
+file-cleanup
 
 # Last checks
 if [[ ! -f "$pemdb" ]]; then

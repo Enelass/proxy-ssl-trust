@@ -1,6 +1,6 @@
 #!/bin/zsh
-if [[ -z ${logI-} ]]; then clear; source ./stderr_stdout_syntax.sh; source ./play.sh; fi
 
+if [[ -z ${logI-} ]]; then source ./stderr_stdout_syntax.sh; fi
 
 ################################ VARIABLES #############################
 website_regex="^(https?:\/\/)?([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}\/?$"
