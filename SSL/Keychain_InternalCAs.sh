@@ -21,10 +21,9 @@
 
 ################################# Variables ########################################
 version=0.3
-script_dir=$(dirname $(realpath $0))
-# If this is a standalone execution...
+local current_dir=$(dirname $(realpath $0))
 if [[ -z "${teefile-}" ]]; then AppName="KeychainInternalCAs"; teefile="/tmp/$AppName.log"; fi
-if [[ -z "${logI+x}" || -z "${logI}" ]]; then source "$script_dir/stderr_stdout_syntax.sh"; fi
+if [[ -z ${logI-} ]]; then source "$current_dir/../stderr_stdout_syntax.sh"; fi
 
 #################################  Functions ########################################
 # Function to display the Help Menu
@@ -122,18 +121,6 @@ keychainIntCA() {
 }
 
 
-###############################   RUNTIME   ################################
-# If not invoked/sourced by another script, we'll set some variable for standalone use...
-if [[ -z "${invoked-}" ]]; then 
-    clear
-    echo -e "Summary: The purpose of this script is to extract a list of internal root certificate authorities form the Keychain Manager in MacOS
-         To do so, it excludes the certificates found in the Keychain manager if there are Intermediate Authorities, Certificates or are not signing CAs.
-         It only retain Root and signing CAs and build a list of it. Each Root CA certificate can then be added to certificate stores (e.g. PEM Files)
-         for various clients that are not using the MacOS system certificate store (Keychain Manager)."
-    echo -e "Author:  florian@photonsec.com.au\t\tgithub.com/Enelass\nRuntime: currently running as $(whoami)"
-    echo "This script was invoked directly... Setting variable for standalone use..."
-fi
-
 
 ###########################   Script SWITCHES   ###########################
 while [[ $# -gt 0 ]]; do
@@ -146,6 +133,17 @@ while [[ $# -gt 0 ]]; do
   esac
   shift
 done
+
+###############################   RUNTIME   ################################
+# If not invoked/sourced by another script, we'll set some variable for standalone use...
+if [[ -z "${invoked-}" ]]; then 
+    echo -e "Summary: The purpose of this script is to extract a list of internal root certificate authorities form the Keychain Manager in MacOS
+         To do so, it excludes the certificates found in the Keychain manager if there are Intermediate Authorities, Certificates or are not signing CAs.
+         It only retain Root and signing CAs and build a list of it. Each Root CA certificate can then be added to certificate stores (e.g. PEM Files)
+         for various clients that are not using the MacOS system certificate store (Keychain Manager)."
+    echo -e "Author:  florian@photonsec.com.au\t\tgithub.com/Enelass\nRuntime: currently running as $(whoami)"
+    echo "This script was invoked directly... Setting variable for standalone use..."
+fi
 
 
 ### Requirement:

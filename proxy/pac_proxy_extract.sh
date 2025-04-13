@@ -1,17 +1,19 @@
 #!/bin/zsh
 # Script to extract proxy addresses from PAC file and test connections
+################################# Variables ########################################
 
+local scriptname="$0"
 # You can manually set your the PAC file URL if running this script in standalone mode.
+# If invoked by other scripts, the PAC_FILE_URL will be overwritten by the one found in the system (interfaces or from cutill)...
 PAC_FILE_URL="http://example.com/proxy.pac"
-
-# If invoked by other scripts, the PAC_FILE_URL will be overwritten...
 if [[ -n $pac_url ]]; then PAC_FILE_URL="$pac_url"; fi
 
 pac_file="/tmp/proxy.pac"           # Temporary path to store the downloaded PAC file
 testurl="https://www.google.com"    # URL for performing connectivity tests
-timeout=3                          # cURL time out in seconds for testing proxies...
+timeout=3                           # cURL time out in seconds for testing proxies...
 
-######################## A bit of epic music never hurts ##########################
+
+#################################  Functions ########################################
 # Function to download the PAC file with retries
 download_pac_file() {
     local retries=3; local attempt=0; local success=false
@@ -24,13 +26,12 @@ download_pac_file() {
             success=true
             break
         else
-            echo "Failed to download PAC file. Retrying..."
+            logW "Failed to download PAC file. Retrying..."
         fi
     done
 
     if [[ $success == false ]]; then
-        echo "Failed to download PAC file after $retries attempts."
-        exit 1
+        logE "Failed to download PAC file after $retries attempts. It was available earlier, so maybe your connection is down..."
     fi
 }
 
@@ -50,7 +51,7 @@ test_proxy_connection() {
             log "${RED}FAILURE${NC} - Proxy did not respond or requires authentication..."
             sleep 1; echo -en "\r\033[2K\033[F\033[2K\033[F\033[2K" # Clear the current line and two before
         elif [[ "$response" == "200" ]] || [[ "$response" == "301" ]] || [[ "$response" == "302" ]]; then
-            logS "Proxy is working 👍\n"
+            logS "Proxy is working 👍"
             workingproxy="$proxy"       # Let's save this to instruct other scripts that a working proxy has been found
             sleep 4
         else
@@ -60,6 +61,11 @@ test_proxy_connection() {
     fi
 }
 
+
+##################################### Runtime ######################################
+
+echo; logI "  ---   ${PINK}SCRIPT: $scriptname${NC}   ---"
+logI "        ${PINK}     This script is parse a PAC File and extract a working proxy address and port${NC}"
 
 # Download the PAC file silently
 download_pac_file

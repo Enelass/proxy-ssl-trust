@@ -1,9 +1,13 @@
 #!/bin/zsh
-source ./stderr_stdout_syntax.sh
+local scriptname="$0"
+local current_dir=$(dirname $(realpath $0))
+if [[ -z ${logI-} ]]; then source "$current_dir/../stderr_stdout_syntax.sh"; fi
+
+
+###################################### FUNCTIONS ##########################################
 
 # Function to get and process HTTP proxy settings for a given network service
 get_proxy_settings() {
-    # clear
     local service=$1; local webproxy_settings securewebproxy_settings autoproxy_settings
     logI "    Proxy settings for $service"
     # Fetch web proxy settings
@@ -33,6 +37,9 @@ get_proxy_settings() {
     fi
 }
 
+###################################### RUNTIME ##########################################
+echo; logI "  ---   ${PINK}SCRIPT: $scriptname${NC}   ---"
+logI "        ${PINK}     This script is intended to verify network connectivity and whether a PAC file can be found${NC}"
 
 # Fetch all network services, excluding the first line
 interfaces=$(networksetup -listallnetworkservices | tail -n +2)
@@ -60,7 +67,7 @@ else
     scutil_proxy_url=$(echo "$scutil_proxy_info" | grep 'ProxyAutoConfigURLString' | awk '{print $3}')
     echo ""; logI "Looking for proxy PAC (Proxy Auto-Configuration) File from \`scutil --proxy\` ..."
     if [[ -n "$scutil_proxy_url" ]]; then
-        proxy_urls+=("$scutil_proxy_url")
+        pac_urls+=("$scutil_proxy_url")
         logI "Pac file URL found: $scutil_proxy_url"
     else logI "No Pac file URL found from scutil command..."
     fi
@@ -80,7 +87,7 @@ else
             pac_url="$url"      # We set this variable for the other script to know we have a pac file
         else
             logW "Testing PAC file URL: $url... It cannot be read!"
-            sleep 2; echo -en "\r\033[2K\033[F\033[2K"
+            #sleep 2; echo -en "\r\033[2K\033[F\033[2K"
         fi
     done
 fi

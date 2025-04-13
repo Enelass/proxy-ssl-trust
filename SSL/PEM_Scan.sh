@@ -55,8 +55,8 @@ The script also maintains a database of these files, allowing for easy tracking 
 
 Options:
   --system        Search for PEM Certificate Stores in the System context excluding User directories.
-  --user          Search for PEM Certificate Stores in the User context.
-  --quick         Perform a quick scan (avoiding a full rescan of the system).
+  --user          Search for PEM Certificate Stores in the User context (All Users).
+  --quick         Perform a quick scan (current user only and avoiding a full rescan of the system).
   --verbose       Enable verbose logging and open the log file with detailed information.
   --uninstall     Remove all files created by the script in the specified directory.
   --help          Display this help message and exit.
@@ -98,40 +98,40 @@ enrich_list() {
 	echo "Application,File Path,Magic Byte,SHA1 Signature,LoggedIn User,Hostname,LastModified,Exclude" > "$pemdb"
 	# Process each line in the file
 	while IFS= read -r file_path; do
-	    if [[ $(realpath "$file_path") == "$file_path" ]]; then
 		    if [[ -f "$file_path" ]]; then
-		    	# This line attempts to identify to which application or library the pem file(s) file belongs to
-				if [[ $file_path =~ "/Applications/(.*)/Contents/" ]]; then application_name="${match[1]}" && application_name="${application_name%.app}"; elif [[ $file_path =~ "/opt/homebrew/Cellar/([^/]+)(/([0-9.-]+))?/" ]]; then application_name="${match[1]}" && [[ -n ${match[3]} ]] && application_name+="/${match[3]}"; elif [[ $file_path =~ "/usr/local/([^/]+)/" ]]; then application_name="${match[1]}"; elif [[ $file_path =~ "pip" ]]; then application_name="pip"; elif [[ $file_path =~ "python([0-9.]+)?" ]]; then application_name="python${match[1]}"; elif [[ $file_path =~ "certifi" ]]; then application_name="certifi"; else application_name="Unknown"; fi
-		        # This verifies that the pem file(s) is indeed a plain text file, if not these pem file(s) will be discared (and logged)
-		        magic_byte=$(file -b --mime-type "$file_path")
-		        # This capture the sha1 signature of the file, then strip the path, and only retain the digital signature
-		        sha1_full=$(openssl sha1 "$file_path"); sha1=${sha1_full#*= } # $sha1_full includes the filename and sha1 signature, $sha1 only includes the signature
-		        # We capture the timestamp of when the information for this line, so for this pem file(s) was captured.
-		        timestamp=$(date +"%Y-%m-%d %H:%M:%S")
-		        # If filename isn't pem file(s), exclude from patching, user can manually action oddly named files...
-		        # if [[ $file_path == *"pem file(s)"* ]]; then exclude=0; else exclude=1; fi
-		        exclude=1 # Mark all files for patching exclusion, the user, will need to manually mark it as 0 in the CSV to patch that pem file using --patch
-		        # Check these pem files truly are Root and signing CA (like a NGFW or proxy performing forward SSL inspection)
-		        # It should only include CERTIFICATE, stricly no REQUEST indicative of a CSR, or PRIVATE KEY indicative of a certificate bundle
-		        if [[ $magic_byte == "text/plain" ]] && grep -q 'BEGIN CERTIFICATE' $file_path && ! grep -q 'PRIVATE KEY' $file_path && ! grep -q 'CERTIFICATE REQUEST' $file_path; then
-		        	logonly "Info    - Processing $file_path..."
-		        	logonly "Info    -    The certificate is plain text and looks like a PEM CA, running more checks..."
-		        	local cacount=$(grep "BEGIN CERTIFICATE" $file_path | wc -l | awk '{print $1}')
-		        	if [[ $cacount -ge 10 ]]; then	# We're setting a minimum of 10 Root CAs to treat the file as a certificate store
-		        		logonly "Info    -    This is a CA, it includes $cacount public (and possibly internal) Root CAs"
-		        		logonly "Info    -    All checks are satisfactory, patching the PEM certificate store"
-		        		# Adding the pem file location to the enriched CSV list of pem files to be patched
-		        		echo "$application_name,$file_path,$magic_byte,$sha1,$logged_user,$(hostname),$timestamp,$exclude" >> "$pemdb"
-		        	else
-		        		logonly "Info    -    Not a CA, it only contain $cacount Root CAs where a typical CA pem file (or certificate store) includes about ~130+ Root CAs"
-		        	fi
-		        fi
+		    	if [[ $(realpath "$file_path") == "$file_path" ]]; then
+		    		# This line attempts to identify to which application or library the pem file(s) file belongs to
+						if [[ $file_path =~ "/Applications/(.*)/Contents/" ]]; then application_name="${match[1]}" && application_name="${application_name%.app}"; elif [[ $file_path =~ "/opt/homebrew/Cellar/([^/]+)(/([0-9.-]+))?/" ]]; then application_name="${match[1]}" && [[ -n ${match[3]} ]] && application_name+="/${match[3]}"; elif [[ $file_path =~ "/usr/local/([^/]+)/" ]]; then application_name="${match[1]}"; elif [[ $file_path =~ "pip" ]]; then application_name="pip"; elif [[ $file_path =~ "python([0-9.]+)?" ]]; then application_name="python${match[1]}"; elif [[ $file_path =~ "certifi" ]]; then application_name="certifi"; else application_name="Unknown"; fi
+			        # This verifies that the pem file(s) is indeed a plain text file, if not these pem file(s) will be discared (and logged)
+			        magic_byte=$(file -b --mime-type "$file_path")
+			        # This capture the sha1 signature of the file, then strip the path, and only retain the digital signature
+			        sha1_full=$(openssl sha1 "$file_path"); sha1=${sha1_full#*= } # $sha1_full includes the filename and sha1 signature, $sha1 only includes the signature
+			        # We capture the timestamp of when the information for this line, so for this pem file(s) was captured.
+			        timestamp=$(date +"%Y-%m-%d %H:%M:%S")
+			        # If filename isn't pem file(s), exclude from patching, user can manually action oddly named files...
+			        # if [[ $file_path == *"pem file(s)"* ]]; then exclude=0; else exclude=1; fi
+			        exclude=1 # Mark all files for patching exclusion, the user, will need to manually mark it as 0 in the CSV to patch that pem file using --patch
+			        # Check these pem files truly are Root and signing CA (like a NGFW or proxy performing forward SSL inspection)
+			        # It should only include CERTIFICATE, stricly no REQUEST indicative of a CSR, or PRIVATE KEY indicative of a certificate bundle
+			        if [[ $magic_byte == "text/plain" ]] && grep -q 'BEGIN CERTIFICATE' $file_path && ! grep -q 'PRIVATE KEY' $file_path && ! grep -q 'CERTIFICATE REQUEST' $file_path; then
+			        	logonly "Info    - Processing $file_path..."
+			        	logonly "Info    -    The certificate is plain text and looks like a PEM CA, running more checks..."
+			        	local cacount=$(grep "BEGIN CERTIFICATE" $file_path | wc -l | awk '{print $1}')
+			        	if [[ $cacount -ge 10 ]]; then	# We're setting a minimum of 10 Root CAs to treat the file as a certificate store
+			        		logonly "Info    -    This is a CA, it includes $cacount public (and possibly internal) Root CAs"
+			        		logonly "Info    -    All checks are satisfactory, patching the PEM certificate store"
+			        		# Adding the pem file location to the enriched CSV list of pem files to be patched
+			        		echo "$application_name,$file_path,$magic_byte,$sha1,$logged_user,$(hostname),$timestamp,$exclude" >> "$pemdb"
+			          else
+			        		logonly "Info    -    Not a CA, it only contain $cacount Root CAs where a typical CA pem file (or certificate store) includes about ~130+ Root CAs"
+			          fi
+			        fi
+			    else
+						logonly "Info    - $file_path is a symbolic link to $(realpath "$file_path"), skipping entry to avoid duplicates..."
+				  fi
 		    else
 		    	logonly "Error   - File \""$file_path"\" doesn't exist..."
 		    fi
-		else
-			logonly "Info    - $file_path is a symbolic link to $(realpath "$file_path"), skipping entry to avoid duplicates..."
-		fi
 	done < "$pemlist"
 }
 

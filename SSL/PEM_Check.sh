@@ -18,7 +18,8 @@ help() {
   echo -e "Usage: $0 [options] [pem_file_path]
 Options:
     --help, -h       Show this help message and exit.
-    --quiet, -q      Suppress the output except for errors.
+    --quiet, -q      Suppress the output except for error status.
+    --verbose        Shows the verbose for each certificate subject and name
 Description:
     This script checks the integrity of PEM files containing certificates by parsing them and validating each certificate using OpenSSL.
     It reads the provided PEM file, lists the certificates, and verifies each one. If any certificate is invalid, it logs an error.
@@ -26,8 +27,9 @@ Description:
     If no PEM file path is specified as an argument, the script prompts the user to input the path interactively.
 Example Usage:
     $script_name --path /path/to/certificate.pem     # Validates certificates in the specified PEM file.
-    $script_name -q -p /path/to/certificate.pem # Validates certificates quietly and saves status in pem_error variable
-    $script_name                              # Prompts for PEM file path interactively.
+    $script_name --verbose --path /path/to/certificate.pem     # Validates  and display certificates subjects from the specified PEM file
+    $script_name -q -p /path/to/certificate.pem      # Validates certificates quietly and saves status in pem_error variable
+    $script_name                                     # Prompts for PEM file path interactively.
 Author:
     florian@photonsec.com.au
     github.com/Enelass"
@@ -49,7 +51,6 @@ show_progress_bar() {
 
 # Function to check the integrity of pem file and its embedded certificates
 pem_integrity_check(){
-  local pem_file=$1
   local cert_count=0
   local current_cert_index=0
 
@@ -58,12 +59,11 @@ pem_integrity_check(){
 
   # Initialize array and temporary variable to store current certificate
   certs=()
-  current_cert=""
-	current_cert_index=1
+  current_cert_index=1
   # Scan through each line of the file and construct certificates
   while IFS= read -r line; do
     current_cert+="$line"$'\n'
-    if [[ "$line" == "-----END CERTIFICATE-----" ]]; then
+    if [[ "$line" == *"-----END CERTIFICATE-----"* ]]; then
       certs+=("$current_cert")
       current_cert=""
       cert_count=$((cert_count + 1))
@@ -76,12 +76,21 @@ pem_integrity_check(){
   # Iterate over each certificate in the array and inspect it using OpenSSL
   for cert in "${certs[@]}"; do
     # Verification of the certificate
-    echo "$cert" | openssl x509 -text -noout >/dev/null 2>&1
+    
+    if [[ $verbose -eq 1 ]]; then
+        certCN=$(echo "$cert" | openssl x509 -text -noout | sed -n 's/.*CN=\([^,\/]*\).*/\1/p' | sort -u | xargs ) 2> /dev/null
+        if [[ -z "$certCN" ]]; then certCN=$(echo "$cert" | openssl x509 -text -noout | grep "Subject: ") 2> /dev/null; fi
+    else
+        echo "$cert" | openssl x509 -text -noout >/dev/null 2>&1
+    fi
+
     if [[ $? -ne 0 ]]; then
       pem_error=true
       logonly "Certificate number $current_cert_index is not valid..."
-      cert_error+="$current_cert_index) $(echo "$cert" | sed -n 's/.*CN=\([^,\/]*\).*/\1/p' | sort -u)   "
+      cert_error+="$current_cert_index) $cert_CN   "
     fi
+    # echo "$current_cert_index )   $certCN"
+    if [[ $verbose -eq 1 ]]; then cert_CNs+="$current_cert_index) $certCN\n"; fi
     show_progress_bar $current_cert_index $cert_count
     current_cert_index=$((current_cert_index + 1))
   done
@@ -91,11 +100,17 @@ pem_integrity_check(){
 ###########################   Script SWITCHES   ###########################
 while [[ "$#" -gt 0 ]]; do
     case "$1" in
+        --verbose)
+            verbose=1
+            shift
+            ;;
         --quiet|-q)
             shift
             if [[ -z $1 ]]; then
                 logE "Quiet mode requires a path... e.g. $0 --quiet --path /private/etc/ssl/cert.pem"
-                exit 1
+            fi
+            if [[ $verbose -eq 1 ]]; then
+                logE "Quiet cannot be verbose..."
             fi
             quiet
             ;;
@@ -149,20 +164,18 @@ if [[ $cert_count1 -ne $cert_count2 ]]; then
     logW "Certificate boundaries are not set properly."
 fi
 
-echo "Do we get there?"
-
 # Time to process that good-looking pem file...
 pem_integrity_check "$pem_file"
-
-
 
 if [[ "$pem_error" == "true" ]]; then
     logW "This pem file is corrupted or contains corrupted Base 64 entries (certificates)"
     logW "Erroneous certificate numbers: $cert_error"
     return 1
 else
-    logS "No issue within this Certificate Store"; return 0
+    logS "No issue within this Certificate Store"
 fi
+
+if [[ $verbose -eq 1 ]]; then echo "$cert_CNs"; fi
 
 if [[ -n "${silent-}" || -n "${quiet-}" ]]; then
     unquiet

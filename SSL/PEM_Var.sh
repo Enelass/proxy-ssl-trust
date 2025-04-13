@@ -19,14 +19,14 @@
 ####################################################################################
 version=0.2
 cacertURL="https://curl.se/ca/cacert.pem"
-script_dir=$(dirname $(realpath $0))
+local current_dir=$(dirname $(realpath $0))
 
 # Original variable list
 variables=("REQUESTS_CA_BUNDLE" "SSL_CERT_FILE")
 extravarfile="ssl_vars.config"
 
 # If not invoked/sourced by another script, we'll set some variable for standalone use otherwise this would be ineritated by the source script along with $teefile...
-if [[ -z ${logI-} ]]; then source "$script_dir/stderr_stdout_syntax.sh"; fi
+if [[ -z ${logI-} ]]; then source "$current_dir/../stderr_stdout_syntax.sh"; fi
 if [[ -z "${teefile-}" ]]; then 
     echo -e "\n\nSummary: The purpose of this script is to provide various CLI on MacOS with environment variables referencing a custom PEM certificate store including public and internal Root
          certificate authorities. This will resolve number of connectivity issues where CLI not relying on the MacOS Keychain Access can still trust internally
@@ -86,7 +86,7 @@ extravar(){
 
 uninstall(){
 	if [[ -z ${overwrite-} ]]; then logI "    Requesting uninstallation" ; fi
-	source "$script_dir/user_config.sh"
+	source "$current_dir/../user_config.sh"
 	pattern='.config\/cacert\/cacert.pem'
 	for var in "${variables[@]}"; do unset "$var"; done # Loop through the array and unset custom Certificate Store variable for various clients
 	if [[ -f "$CONFIG_FILE" ]]; then 
@@ -178,7 +178,7 @@ shell_var(){
 
 # Download the latest cacert.pem from curl.se (It contains an updated list of Public Root CAs)
 cacert_download() {
-	if [[ -z ${HOME_DIR-} ]]; then source "$script_dir/user_config.sh"; fi
+	if [[ -z ${HOME_DIR-} ]]; then source "$current_dir/../user_config.sh"; fi
 	customcacert="$HOME_DIR/.config/cacert/cacert.pem"
 	echo ""; logI " Downloading and/or locating custom PEM certificate" 
 	# Create the directory for storing cacert.pem unless existing
@@ -227,14 +227,14 @@ if [ "$(uname)" != "Darwin" ]; then logE " This Script is meant to run on macOS,
 logI "    Running on $(get_macos_version)"
 
 
-source "$script_dir/user_config.sh"	# Let's identify the logged-in user, it's home directory, it's default Shell interpreter and associated config file...
+source "$current_dir/../user_config.sh"	# Let's identify the logged-in user, it's home directory, it's default Shell interpreter and associated config file...
 cacert_download	# Let's download cacert.pem 
 
 # Check if the certificate authority file is valid
 # cacert_integrity_check $customcacert
 
 # List the Internal Root CAs and patch cacert.pem with internal Root CAs
-source "$script_dir/Keychain_InternalCAs.sh" --silent		# This command will invoke the script and return variable $CAList which lists the names of Internal Signing Root CAs from the Keychain Access in MacOS
+source "$current_dir/Keychain_InternalCAs.sh" --silent		# This command will invoke the script and return variable $CAList which lists the names of Internal Signing Root CAs from the Keychain Access in MacOS
 trustca "$customcacert"
 
 # Let's inspect the file for existing environement variables & Let's reference this cacert.pem in the Shell Interpreter config file

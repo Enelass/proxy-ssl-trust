@@ -1,16 +1,17 @@
 #!/bin/zsh
-
-if [[ -z ${logI-} ]]; then source ./stderr_stdout_syntax.sh; fi
+local scriptname="$0"
+local current_dir=$(dirname $(realpath $0))
+if [[ -z ${logI-} ]]; then source "$current_dir/../stderr_stdout_syntax.sh"; fi
 
 ################################ VARIABLES #############################
-website_regex="^(https?:\/\/)?([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}\/?$"
+website_regex="^https:\/\/([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}\/?$"
 websites=("https://photonsec.com.au" "https://www.google.com")  # List of websites to check for check_website()
     # Read additional websites from the configuration file
     while IFS= read -r line || [ -n "$line" ]; do
         # Skip empty lines and lines starting with "#"
         [[ -z "$line" || "$line" =~ ^# ]] && continue
         if [[ "$line" =~ $website_regex ]]; then websites+=("$line"); fi
-    done < websites.config
+    done < "$current_dir/websites.config"
 
 max_success=1   # Maximum number of successful web connections to stop after webconn_checks()
 success_count=0 # Counter for successful web connections for check_website_withoutSSL()
@@ -22,7 +23,7 @@ variables=("GIT_SSL_CAINFO" "CURL_CA_BUNDLE" "REQUESTS_CA_BUNDLE" "AWS_CA_BUNDLE
 # Function to check if a website is reachable over HTTPS without checking the certificate
 check_website_withoutSSL() {
     url=$1
-    logI "  Checking connection to $url (without SSL verification). Please wait..."
+    logI "  Checking connection to $url (${ORANGE}without${NC} SSL verification). Please wait..."
     if curl -skI "$url" | grep -E "HTTP/2 200|HTTP/1.1 200" > /dev/null; then
         logS "    Connection succeeded: ${GREENW}$url${NC}"
         ((success_count++))
@@ -42,7 +43,7 @@ check_website_withSSL() {
         # If we can connect, extract the issuer...
         issuer=$(echo $output | grep "issuer:" | sed -n 's/.*CN=\([^;]*\).*/\1/p')
         issuers+="$issuer;"
-        logI "  Checking connection to ${GREENW}$url${NC} (with SSL verification). Please wait..."
+        logI "  Checking connection to ${GREENW}$url${NC} (${ORANGE}with${NC} SSL verification). Please wait..."
         logS "    Connection succeeded, the issuer of the website certificate is ${BLUEW}$issuer${NC}"
         # Let's attempt to see if this is public or private issuer
         # logI "    The issuer was trusted either because it is a publibly signed, or it is internally signed with a Internal Root CA trusted by MacOS Keychain..."
@@ -71,22 +72,26 @@ check_website_withSSL() {
 for var in "${variables[@]}"; do unset "$var"; done # Loop through the array and unset custom Certificate Store variable for various clients
 
 # Execute the function to check web connectivity without SSL verification
-logI "We'll now attempt to make a few web requests)..."
+echo; logI "  ---   ${PINK}SCRIPT: $scriptname${NC}   ---"
+logI "        ${PINK}     This script is intended to check whether HTTPS requests are intercepted or not...${NC}"
+
+logI "  We'll now attempt to make a few web requests)..."
 for site in "${websites[@]}"; do
   check_website_withoutSSL "$site"
   if [ $success_count -ge "$max_success" ]; then break; fi # If we could connect at least once, we know web connectivity can be established so skipping the other websites checks
 done
 
-# If we couldn't establish web connections, let's stop there since we have a proxy or internet connectivity issue...
+# If we couldn't establish web connections, let's stop there since we have either proxy or internet connectivity issues...
 if [[ $success_count -gt 0 ]]; then
   logS "    We were able to connect without checking for the validity of SSL/TLS certificate!"
-  logW "We will now check if the web requests/responses are SSL intercepted!"
+  echo; logW "We will now check if the web requests/responses are SSL intercepted!"
   logI "The issuer for each certificate website will be displayed and captured"
+  echo; echo
   for site in "${websites[@]}"; do
       check_website_withSSL "$site"
   done
 else
-  echo""; logE "We couldn't connect...\n Aborting..."
+    logE "We couldn't connect... Are you connected to the internet? Aborting..."
 fi
 
 
@@ -96,7 +101,7 @@ if [[ $trustissue_cnt -gt 0 ]]; then
     curl --head "$url" 2>&1 | tail -n +4 | grep -v "Established"
     logI "    We need to download Custom certificate Store (PEM file) and add internal signing Root CAs"
     logI "    then create persistent environment variables pointing to this custom Certificate Store..."
-    source ./PEM_Var.sh
+    source "$current_dir/../SSL/PEM_Var.sh"
 fi
 
 if [[ $success_cnt -gt 0 ]]; then
@@ -111,7 +116,7 @@ if [[ $success_cnt -gt 0 ]]; then
             PublicCAOnly=true
         else
             logI "The certificate issuer $issuer is not public..."
-            source ./Keychain_InternalCAs.sh --intermediate --silent  #Retrieves a list of Internal Root and Intermediate CAs silently
+            source "$current_dir/../SSL/Keychain_InternalCAs.sh" --silent  #Retrieves a list of Internal Root and Intermediate CAs silently
             if echo $CAList | grep -q $issuer; then
                 logS "The certificate issuer $issuer is ${GREENW}internal${NC}"
                 NeedCustomCacert=true
@@ -125,7 +130,7 @@ if [[ $success_cnt -gt 0 ]]; then
         logI "We have found website(s) signed by internal certificate authority(ies)"
         logI "    We need to create a Custom certificate Store (PEM file) and add our internal signing Root CAs"
         logI "    then we'll create persistent environment variables pointing to this custom Certificate Store to solve of SSL trust issues..."
-        # source ./PEM_Var.sh UNCOMMENT ME AFTER TESTING...
+        source "$current_dir/../SSL/PEM_Var.sh"
     fi
     if [[ -z ${NeedCustomCacert-} && -n $PublicCAOnly ]]; then
         logI "All websites were signed by Public CAs and not internal ones..."
@@ -134,8 +139,3 @@ if [[ $success_cnt -gt 0 ]]; then
         logI "please add SSL inspected websites to $(realpath ./websites.config)"
     fi
 fi
-
-
-# Let's identify the logged-in user, it's home directory, it's default Shell interpreter and associated config file...
-# source ./user_config.sh
-# cacert_download                 # Let's download cacert.pem 

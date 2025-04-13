@@ -1,21 +1,18 @@
 #!/bin/zsh
+# The purpose of this file is to return user context variables, including the
+#   the default shell interpreter used by the user  (e.g. zsh, bash, etc...)
+#   the path for the user home directory 						(e.g. /Users/homedir)
+#   the path for the user's shell configuration 		(e.g. ~/.zshrc)
 
-script_dir=$(dirname $(realpath $0))
+local script_dir=$(dirname $(realpath $0))
 if [[ -z ${logI-} ]]; then source "$script_dir/stderr_stdout_syntax.sh"; fi
 
 
 ################################## Functions ###################################
 
-# Function to remove stdout and stderr for every cert but the summary of it
-quiet() { quiet=1 ; exec 3>&1 4>&2 ; exec 1>/dev/null 2>&1 }
-
-# Function to add back stdout and stderr
-unquiet() { exec 1>&3 2>&4 ; exec 3>&- 4>&- }
-
-
 # Function to identify the shell interpreter and its config file
 shell_config() {
-	echo ""; logI " Identifying the Shell interpreter" 
+	logI " Identifying the Shell interpreter" 
 	DEFAULT_SHELL=$SHELL 									# Determine default shell
 	CURRENT_SHELL=$(ps -p $$ -o comm=) 		# Determine current shell
 	if [[ "$DEFAULT_SHELL" ==  "$CURRENT_SHELL" ]]; then
@@ -70,6 +67,7 @@ default_user() {
 
 ###########################   Script SWITCHES   ###########################
 # Switches and Executions for the initial call (regardless of when)
+# quiet/unquiet functions are defined by ./user_config.sh
 while [[ $# -gt 0 ]]; do
   case $1 in
     --quiet|-q) quiet ;;

@@ -1,4 +1,7 @@
 #!/bin/zsh
+# This script is used to set some colored syntaxt for the user stdout, or stderr.
+# It also add function to hide stdout if needed (quiet function), or restore it (unqiet function)
+
 # Some due credits, lest we forget: https://www.zdnet.com/article/without-dennis-ritchie-there-would-be-no-jobs/
 if [[ -z ${teefile-} ]]; then teefile="/tmp/tmp.logfile.log"; fi
 
@@ -8,6 +11,8 @@ GREEN='\033[1;32m'
 ORANGE='\033[38;5;214m'
 GREENW='\033[38;5;22;48;5;15m'
 BLUEW='\033[0;34;47m'
+PINK='\033[38;5;206m'
+PURPLE='\033[0;35m'
 NC='\033[0m' # No Color
 
 # Function to remove stdout and stderr for every cert but the summary of it
