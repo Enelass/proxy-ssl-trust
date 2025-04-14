@@ -20,14 +20,13 @@
 version=0.2
 cacertURL="https://curl.se/ca/cacert.pem"
 local current_dir=$(dirname $(realpath $0))
-
-# Original variable list
+local scriptname="$0"
 variables=("REQUESTS_CA_BUNDLE" "SSL_CERT_FILE")
-extravarfile="ssl_vars.config"
+extravarfile="$current_dir/ssl_vars.config"
 
 # If not invoked/sourced by another script, we'll set some variable for standalone use otherwise this would be ineritated by the source script along with $teefile...
-if [[ -z ${logI-} ]]; then source "$current_dir/../stderr_stdout_syntax.sh"; fi
-if [[ -z "${teefile-}" ]]; then 
+if [[ -z ${BLUEW-} ]]; then source "$current_dir/../stderr_stdout_syntax.sh"; fi
+if [[ -z "${invoked-}" ]]; then 
     echo -e "\n\nSummary: The purpose of this script is to provide various CLI on MacOS with environment variables referencing a custom PEM certificate store including public and internal Root
          certificate authorities. This will resolve number of connectivity issues where CLI not relying on the MacOS Keychain Access can still trust internally
          signed servers using an Internal Root CA and trust https connections where SSL forward inspection is performed and signed on a fly by a proxy/ngfw internal CA."
@@ -180,7 +179,7 @@ shell_var(){
 cacert_download() {
 	if [[ -z ${HOME_DIR-} ]]; then source "$current_dir/../user_config.sh"; fi
 	customcacert="$HOME_DIR/.config/cacert/cacert.pem"
-	echo ""; logI " Downloading and/or locating custom PEM certificate" 
+	logI " Downloading and/or locating custom PEM certificate" 
 	# Create the directory for storing cacert.pem unless existing
 	if [[ -d "$HOME_DIR/.config/cacert/" ]]; then
 	else
@@ -220,11 +219,11 @@ while [[ $# -gt 0 ]]; do
   shift
 done
 
-### Requirement:
-echo ""; logI " Verifying requirements..."
-# Check if the operating system is Darwin (macOS)
-if [ "$(uname)" != "Darwin" ]; then logE " This Script is meant to run on macOS, not on: $(uname -v)"; fi
-logI "    Running on $(get_macos_version)"
+
+# Execute the function to check web connectivity without SSL verification
+echo; logI "  ---   ${PINK}SCRIPT: $scriptname${NC}   ---"
+logI "        ${PINK}     This script will download a public Certificate Store and add Internal CAs to it${NC}"
+logI "        ${PINK}     It will then create environment variable in the user shell config and reference it...${NC}"
 
 
 source "$current_dir/../user_config.sh"	# Let's identify the logged-in user, it's home directory, it's default Shell interpreter and associated config file...

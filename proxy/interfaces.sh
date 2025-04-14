@@ -45,6 +45,7 @@ logI "        ${PINK}     This script is intended to verify network connectivity
 interfaces=$(networksetup -listallnetworkservices | tail -n +2)
 
 # Iterate over each network service and fetch HTTP proxy settings
+logI "Inspecting NICs..."
 while IFS= read -r service; do
     IPAddr=$(networksetup -getinfo "$service" | grep -E '^IP address: ((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$')
     if [[ -n $IPAddr ]]; then
@@ -54,7 +55,7 @@ while IFS= read -r service; do
     else
         logW "   $service is inactive, it doesn't have an IP address or a valid one..."
         get_proxy_settings "${service}"
-        sleep 2; echo -en "\r\033[2K\033[F\033[2K\033[F\033[2K\033[F\033[2K"
+        echo -en "\r\033[2K\033[F\033[2K\033[F\033[2K\033[F\033[2K"
     fi
     
 done <<< "$interfaces"
@@ -65,11 +66,11 @@ else
     # Fetch scutil proxy settings as well...
     scutil_proxy_info=$(scutil --proxy)
     scutil_proxy_url=$(echo "$scutil_proxy_info" | grep 'ProxyAutoConfigURLString' | awk '{print $3}')
-    echo ""; logI "Looking for proxy PAC (Proxy Auto-Configuration) File from \`scutil --proxy\` ..."
+    logI "Looking for proxy PAC (Proxy Auto-Configuration) File from \`scutil --proxy\` ..."
     if [[ -n "$scutil_proxy_url" ]]; then
         pac_urls+=("$scutil_proxy_url")
-        logI "Pac file URL found: $scutil_proxy_url"
-    else logI "No Pac file URL found from scutil command..."
+        logI "    Pac file URL found: $scutil_proxy_url"
+    else logI "   No Pac file URL found from scutil command..."
     fi
 fi
 
@@ -79,15 +80,14 @@ if [[ ${#pac_urls[@]} -eq 0 ]]; then
 else
     # Remove duplicate URLs and then display unique URLs
     proxy_urls=($(echo "${pac_urls[@]}" | tr ' ' '\n' | sort -u))
-    echo ""; logI "PAC file URL(s):"
+    logI "We have found the following PAC file URL(s):"
     # Test each PAC URL to check if the file exists
     for url in "${proxy_urls[@]}"; do
         if curl --head --silent --fail "$url" > /dev/null; then
-            logS "Testing PAC file URL: $url... It can be downloaded!"
+            logS "    Testing PAC file URL: $url... It can be downloaded!"
             pac_url="$url"      # We set this variable for the other script to know we have a pac file
         else
-            logW "Testing PAC file URL: $url... It cannot be read!"
-            #sleep 2; echo -en "\r\033[2K\033[F\033[2K"
+            logW "    Testing PAC file URL: $url... It cannot be read!"
         fi
     done
 fi

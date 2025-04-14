@@ -19,9 +19,9 @@
 
 #################################### Variables ####################################
 version="v0.2"
-scriptname="$0"
+local scriptname="$0"
 local current_dir=$(dirname $(realpath $0))
-if [[ -z ${logI-} ]]; then source "$current_dir/../stderr_stdout_syntax.sh"; fi
+if [[ -z ${BLUEW-} ]]; then source "$current_dir/../stderr_stdout_syntax.sh"; fi
 variables=("all_proxy" "ALL_PROXY" "http_proxy" "HTTP_PROXY" "https_proxy" "HTTPS_PROXY" "no_proxy" "NO_PROXY")	# Proxy Environment Variables
 
 ########################## Standalone Exec - Specifics #############################
@@ -68,7 +68,7 @@ uninstall() {
 shell_var(){
 	# Calling default user and Shell config scripts since these variables are a requirement 
 	source "$current_dir/../user_config.sh" --quiet
-	echo; logI "${PURPLE}   Env Var - ${NC}Are proxy related Environment Variables currently set ?"
+	logI "${GREEN}   Env Var - ${NC}Are proxy related Environment Variables currently set ?"
 	# Loop through each variable and check if it is set
 	for var in "${variables[@]}"; do
 		if [[ -n ${(P)var} ]];
@@ -85,7 +85,7 @@ shell_var(){
 
 # Function to check if the variable is set in the configuration file
 check_set_proxy_var() {
-    echo; logI "${PURPLE}   Declared Var - ${NC}Are proxy related Environment Variables declared in $CONFIG_FILE ?"
+    logI "${GREEN}   Declared Var - ${NC}Are proxy related Environment Variables declared in $CONFIG_FILE ?"
     local file=$1
     unset patchrc
     # check for pattern like http_proxy or https_proxy
@@ -113,8 +113,8 @@ check_set_proxy_var() {
         if [[ -f "$CONFIG_FILE.pre-alpacasetup" ]]; then log "Info    -      Backup file can be found at "$CONFIG_FILE_BAK""; fi
         sed -i '' '/^export.*_proxy=/d' "$file"
         echo 'export {all,http,https}_proxy=http://localhost:3128' >> "$CONFIG_FILE"
-        source $CONFIG_FILE
-        logW "       ${GREENW}source $CONFIG_FILE${NC} will need to be run by the user (and not in this scubscript) for this change to be effective !"
+        source $CONFIG_FILE # This will only affect this subshell...
+        logW "       ${GREENW}source $CONFIG_FILE${NC} will need to be run by the user for the changes to be effective!"
     else
     	logI "       The right environment variable for Alpaca was already found in $CONFIG_FILE"
     	logI "       export {all,http,https}_proxy=http://localhost:3128"
@@ -162,7 +162,7 @@ install_alpaca() {
 
 # Function to verify if Alpaca is installed and installed with brew
 is_brew_alpaca(){
-	echo; logI "   ${PURPLE}Install - ${NC}Is Alpaca installed with Homebrew ? (We need it to set it as a Daemon)"
+	logI "   ${GREEN}Install - ${NC}Is Alpaca installed with Homebrew ? (We need it to set it as a Daemon)"
 	if $(brew list Alpaca > /dev/null 2>&1) ; then
 		logS "       $(alpaca --version) is already installed by Homebrew in $(dirname $(which alpaca))..."
 	else 
@@ -180,12 +180,12 @@ is_brew_alpaca(){
 is_socket_free() {
 	LISTENING_ON_3128=$(lsof -iTCP:3128 -sTCP:LISTEN -P -n)			# What's listening on TCP3128?
 	unset alpaca3128
-	echo; logI "${PURPLE}   Socket - ${NC}Is anything listening on TCP 3128 ? (We need that socket)"
+	logI "${GREEN}   Socket - ${NC}Is anything listening on TCP 3128 ? (We need that socket)"
 	if [[ -n "$LISTENING_ON_3128" ]]; then
 		# Something is listening on 3128
 		if echo "$LISTENING_ON_3128" | grep -q alpaca; then
 			logS "       Yes, Alpaca is listening on TCP3128"
-			logI "            $(echo "$LISTENING_ON_3128" | grep "(LISTEN)" | grep -v "::1")"
+			logI "       $(echo "$LISTENING_ON_3128" | grep "(LISTEN)" | grep -v "::1")"
 			alpaca3128=true
 		else
 			logW "       Something is listening on TCP3128, but that isn't Alpaca... Maybe CNTLM ?"
@@ -200,8 +200,10 @@ is_socket_free() {
 
 # Function to check whether Alpaca is listening and listening on the right socket
 alpaca_listening() {
-	echo; logI "   ${PURPLE}Process - ${NC} Is Alpaca listening on any port but TCP3128? Please wait, this occasionaly takes a while..."
+	logI "   ${GREEN}Process - ${NC} Is Alpaca listening on any port but TCP3128?"
+	start_spinner "Please wait, ${GREENW}lsof${NC} can occasionaly take a while..."
 	Is_Alpaca_Listening=$(lsof -sTCP:LISTEN -P -i -a -c alpaca)		# Is Alpaca listening on any ports?
+	stop_spinner
 	if [[ -n "$Is_Alpaca_Listening" ]]; then 
 		if echo "$Is_Alpaca_Listening" | grep " (LISTEN)" | grep -qv ":3128" ; then
 			logW "       Alpaca appears to be listening on another port..."
@@ -217,9 +219,16 @@ alpaca_listening() {
 
 # Function to start Alpaca as a serice/daemon (auto-start with the OS)
 alpaca_service() {
-	echo; logI "   ${PURPLE}Service - ${NC} Is Alpaca service started?"
-	for n in 1 2 3; do
-		    #logI "       Attempt $n to start Alpaca service..."
+	logI "   ${GREEN}Service - ${NC} Is Alpaca service started?"
+	start_spinner "Please wait, ${GREENW}brew services${NC} can occasionaly take a while..."
+	if ! brew services info alpaca | grep "PID:" > /dev/null 2>&1; then
+		stop_spinner
+		if [[ -n $alpaca3128 ]]; then
+			logW "       Alpaca is listening on 3128 but the service is not started..."
+			logE "       Kill Alpaca so free up the network socket and try again. Aborting..."
+		fi
+		logI "       Alpaca service/daemon is not running. Attempting to start it..."
+		for n in 1 2 3; do
 		    brew services start alpaca > /dev/null
 		    if [ $? -ne 0 ]; then 
 		    	logW "       Failed to start Alpaca service on attempt $n."
@@ -229,14 +238,12 @@ alpaca_service() {
 		    	break
 		    fi
 		done
-
 		if [[ ! $alprunning == "true" ]]; then
 			logW "  Service failed to start after 3 attempts."
 			logI "  We'll attempt reinstalling Alpaca..."
 			if [[ -z "${HOME_DIR-}" ]]; then source "$current_dir/../user_config.sh" --quiet; fi
 			uninst=1; uninstall; sleep 5
 			install_alpaca; sleep 5
-
 			logI "  Last rounds of attempts to start Alpaca"
 			for i in 1 2 3; do
 			    logI "  Attempt $i to start Alpaca service..."
@@ -250,10 +257,15 @@ alpaca_service() {
 			    fi
 			done
 		fi
-
-		if [[ ! $alprunning == "true" ]]; then
-			logE "  We could not start Alpaca. Maybe try again after a reboot, or install it manually..."
-		fi
+	else
+		stop_spinner
+		logI "       Alpaca service/daemon is already running!"
+		alprunning=true
+	fi	
+	if [[ ! $alprunning == "true" ]]; then
+		logE "  We could not start Alpaca. Maybe try again after a reboot, or install it manually..."
+	fi
+	sleep 5 # Give a few seconds for the service to start listening...
 }
 
 # Function to attempt installing (with retries) a package via Homebrew
@@ -311,7 +323,7 @@ fi
 
 echo; logI "  ---   ${PINK}SCRIPT: $scriptname${NC}   ---"
 logI "        ${PINK}     This script is intended to check if Alpaca Daemon is setup and running on TCP 3128...${NC}"
-logI "${PURPLE}REQUIREMENTS - ${NC}Running a few checks prior to installing Alpaca..."
+logI "${GREEN}REQUIREMENTS - ${NC}Running a few checks prior to installing Alpaca..."
 
 
 # Check if anything is listening on TCP3128
@@ -343,8 +355,8 @@ fi
 shell_var
 
 # Now that all requirements are met, we'll test the connectivity or revert the changes made by this script...
-echo; logI "${PURPLE}   Connect - ${NC}We will now run some connectivity tests..."
-
+logI "${GREEN}   Connect - ${NC}We will now run some connectivity tests..."
+source "$current_dir/connect_proxy_nossl.sh"
 
 # The local proxy is installed and running, we'll now test connectivity and see whether or not the connection is SSL intercepted
 logI "       We will now test web requests and whether these are SSL intercepted or not..."

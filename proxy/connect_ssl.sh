@@ -1,7 +1,7 @@
 #!/bin/zsh
 local scriptname="$0"
 local current_dir=$(dirname $(realpath $0))
-if [[ -z ${logI-} ]]; then source "$current_dir/../stderr_stdout_syntax.sh"; fi
+if [[ -z $teefile ]]; then clear; source "$current_dir/../stderr_stdout_syntax.sh"; fi
 
 ################################ VARIABLES #############################
 website_regex="^https:\/\/([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}\/?$"
@@ -13,54 +13,44 @@ websites=("https://photonsec.com.au" "https://www.google.com")  # List of websit
         if [[ "$line" =~ $website_regex ]]; then websites+=("$line"); fi
     done < "$current_dir/websites.config"
 
-max_success=1   # Maximum number of successful web connections to stop after webconn_checks()
-success_count=0 # Counter for successful web connections for check_website_withoutSSL()
-success_cnt=0   # Counter for successful web connections for check_website_withSSL()
+
+local curltimeout=5         # Number of seconds after which cURL will give up establishing a connection
+local ssl_success_count=0   # Counter for successful web connections for check_website_withSSL()
+local max_success=5         # Maximum number of successful web connections
 variables=("GIT_SSL_CAINFO" "CURL_CA_BUNDLE" "REQUESTS_CA_BUNDLE" "AWS_CA_BUNDLE" "NODE_EXTRA_CA_CERTS" "SSL_CERT_FILE")
 
 ################################ FUNCTIONS #############################
 
-# Function to check if a website is reachable over HTTPS without checking the certificate
-check_website_withoutSSL() {
-    url=$1
-    logI "  Checking connection to $url (${ORANGE}without${NC} SSL verification). Please wait..."
-    if curl -skI "$url" | grep -E "HTTP/2 200|HTTP/1.1 200" > /dev/null; then
-        logS "    Connection succeeded: ${GREENW}$url${NC}"
-        ((success_count++))
-    else
-        logW "    Connection failed: ${GREENW}$url${NC}"
-        sleep 1; echo -en "\r\033[2K\033[F\033[2K\033[F\033[2K"
-    fi
-    
-}
-
+# Function to verify if HTTPS requests via the proxy do succeed...
 check_website_withSSL() {
     url=$1
     local issuer
-    output=$(curl --head --verbose "$url" 2>&1)
-    echo -en "\r\033[2K\033[F\033[2K\033[F\033[2K"
+    logI "  Checking connection to ${GREENW}$url${NC} (${ORANGE}with${NC} SSL verification)"
+    start_spinner "Please wait..."
+    output=$(curl -svI --connect-timeout $curltimeout --max-time $curltimeout "$url" 2>&1)
+    stop_spinner
     if [ $? -eq 0 ]; then
         # If we can connect, extract the issuer...
         issuer=$(echo $output | grep "issuer:" | sed -n 's/.*CN=\([^;]*\).*/\1/p')
         issuers+="$issuer;"
-        logI "  Checking connection to ${GREENW}$url${NC} (${ORANGE}with${NC} SSL verification). Please wait..."
-        logS "    Connection succeeded, the issuer of the website certificate is ${BLUEW}$issuer${NC}"
+        echo -en "\r\033[2K\033[F\033[2K"
+        logS "    Connection to $url succeeded, Certificate issuer is: ${BLUEW}$issuer${NC}"
         # Let's attempt to see if this is public or private issuer
         # logI "    The issuer was trusted either because it is a publibly signed, or it is internally signed with a Internal Root CA trusted by MacOS Keychain..."
         # logI "       cURL used to test connectity, ALWAYS uses MacOS internal trusted certificates"
         # logI "       (even if specifying a certifice store without Internal Root CAs with the ${GREENW}--cacert${NC} switch."
         # logI "       Since a lot of CLI and a few GUIs program does not rely on the MacOS trusted certificates in Keychain Access,"
         # logI "       we need to provide a custom Certificate authority file (cacert.pem)"
-        ((success_cnt++))
+        ((ssl_success_count++))
     else
-        output=$(curl -s --insecure --head --verbose "$url" 2>&1)
+        output=$(curl -vIk "$url" 2>&1)
         if [ $? -eq 0 ]; then
             issuer=$(echo "$output" | grep "issuer:" | sed -n 's/.*CN=\([^;]*\).*/\1/p')
-            logI "  Checking connection to ${GREENW}$url${NC} (with SSL verification). Please wait..."
-            logW "    Connection failed. The issuer of the website certificate is ${BLUEW}$issuer${NC}"
+            echo -en "\r\033[2K\033[F\033[2K"
+            logW "    Connection to $url failed. Certificate issuer is not trusted: ${BLUEW}$issuer${NC}"
         else
-            logI "  Checking connection to ${GREENW}$url${NC} (with SSL verification). Please wait..."
-            logW "    Connection failed."
+            echo -en "\r\033[2K\033[F\033[2K"
+            logW "    Connection to $url failed. It could not be established..."
         fi
         if echo "$output" | grep "self signed certificate" > /dev/null 2>&1; then ((trustissue_cnt++)); fi # If the certificate is signed by a trusted issuer but is expired or has insecure ciphers refused by the server, this variable will not be set...
     fi
@@ -75,25 +65,12 @@ for var in "${variables[@]}"; do unset "$var"; done # Loop through the array and
 echo; logI "  ---   ${PINK}SCRIPT: $scriptname${NC}   ---"
 logI "        ${PINK}     This script is intended to check whether HTTPS requests are intercepted or not...${NC}"
 
-logI "  We'll now attempt to make a few web requests)..."
-for site in "${websites[@]}"; do
-  check_website_withoutSSL "$site"
-  if [ $success_count -ge "$max_success" ]; then break; fi # If we could connect at least once, we know web connectivity can be established so skipping the other websites checks
-done
-
 # If we couldn't establish web connections, let's stop there since we have either proxy or internet connectivity issues...
-if [[ $success_count -gt 0 ]]; then
-  logS "    We were able to connect without checking for the validity of SSL/TLS certificate!"
-  echo; logW "We will now check if the web requests/responses are SSL intercepted!"
-  logI "The issuer for each certificate website will be displayed and captured"
-  echo; echo
-  for site in "${websites[@]}"; do
-      check_website_withSSL "$site"
-  done
-else
-    logE "We couldn't connect... Are you connected to the internet? Aborting..."
-fi
-
+logI "We will now check if the web requests/responses are SSL intercepted!"
+logI "The issuer for each certificate website will be displayed and captured"
+for site in "${websites[@]}"; do
+  check_website_withSSL "$site"
+done
 
 if [[ $trustissue_cnt -gt 0 ]]; then
     echo ""; logW "We couldn't connect some websites while verifiying SSL certificates"
@@ -104,7 +81,7 @@ if [[ $trustissue_cnt -gt 0 ]]; then
     source "$current_dir/../SSL/PEM_Var.sh"
 fi
 
-if [[ $success_cnt -gt 0 ]]; then
+if [[ $ssl_success_count -gt $max_success ]]; then
     ssl_issuers=()
     while IFS= read -r issuer; do
         # Append each issuer to the array
@@ -115,13 +92,12 @@ if [[ $success_cnt -gt 0 ]]; then
             logI "We have found the following ${GREENW}public${NC} issuer: $issuer"
             PublicCAOnly=true
         else
-            logI "The certificate issuer $issuer is not public..."
             source "$current_dir/../SSL/Keychain_InternalCAs.sh" --silent  #Retrieves a list of Internal Root and Intermediate CAs silently
             if echo $CAList | grep -q $issuer; then
                 logS "The certificate issuer $issuer is ${GREENW}internal${NC}"
                 NeedCustomCacert=true
             else
-                logW "The certificate issuer $issuer is not internal either..."
+                logW "The certificate issuer $issuer is not public nor internal..."
             fi
         fi
     done
@@ -135,7 +111,9 @@ if [[ $success_cnt -gt 0 ]]; then
     if [[ -z ${NeedCustomCacert-} && -n $PublicCAOnly ]]; then
         logI "All websites were signed by Public CAs and not internal ones..."
         logW "We won't therefore create a customer Certificate Store including internal CAs nor reference it in your Shell config file..."
-        logI "If you still believe SSL interception is in place in your environment, "
-        logI "please add SSL inspected websites to $(realpath ./websites.config)"
+        logI "If you want to create a custom Certificate Authority Store containing public and internal CAs,"
+        logI "   please add SSL inspected websites to $(realpath ./websites.config) and run this script again, or"
+        logI "   you could also run $(realpath ../SSL/PEM_Var.sh)"
+        logI "   or ${GREENW}$(realpath ../proxy_ssl_trust.sh) --var${NC}"
     fi
 fi

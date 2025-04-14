@@ -5,7 +5,7 @@
 #   the path for the user's shell configuration 		(e.g. ~/.zshrc)
 
 local script_dir=$(dirname $(realpath $0))
-if [[ -z ${logI-} ]]; then source "$script_dir/stderr_stdout_syntax.sh"; fi
+if [[ -z ${BLUEW-} ]]; then source "$script_dir/stderr_stdout_syntax.sh"; fi
 
 
 ################################## Functions ###################################

@@ -21,14 +21,15 @@
 
 
 #################################   Variables     ####################################
-AppName="Proxy_SSL_Trust"
-version="1.7"
+local scriptname=$(basename $(realpath $0))
+local AppName="Proxy_SSL_Trust"
+local version="1.7"
 script_dir=$(dirname $(realpath $0))
 teefile="/tmp/$AppName.log"
 invoked=true	# To instruct other scripts that we sourced them... 
-if [[ -z ${logI-} ]]; then 
-    source "$script_dir/stderr_stdout_syntax.sh"
+if [[ -z ${BLUEW-} ]]; then 
     source "$script_dir/play.sh"
+    source "$script_dir/stderr_stdout_syntax.sh"
 fi
 ####################################### Defining functions ###########################	
 
@@ -142,7 +143,7 @@ attempt_install() {
 }
 
 
-###################################### Checking Requirements ###########################################
+
 ###########################   Script SWITCHES   ###########################
 # Switches and Executions for the initial call (regardless of when)
 if [[ $# -gt 1 ]]; then
@@ -170,19 +171,24 @@ while [[ $# -gt 0 ]]; do
   shift
 done
 
+
+##################################### Runtime ######################################
+
+trap 'stop_spinner_sigint; play_sigint > /dev/null 2>&1' SIGINT
+trap 'stop_spinner; play_exit > /dev/null 2>&1' EXIT
+play
+
+clear
+logI "  ---   ${PINK}SCRIPT: $scriptname${NC}   ---"
+logI "        ${PINK}     This script serves as an entry point for various proxy and SSL trust utilities.${NC}	"
+logI "Summary: This script performs various operations related to certificate trust and proxy configurations on a MacOS system"
+logI "         It is designed to improve connectivity by managing certificates and proxy settings, ensuring that internal CAs are"
+logI "         trusted and appropriate environment configurations are applied."
+logI "         For more information, check usage with $scriptname --help"
+
 # Welcoming stdin for unprivileged user
 if [ "$EUID" -ne 0 ]; then
-	clear
-  echo "___________________________ - Unprivileged - _____________________________________________________________________________"
-	logI "This script resolves certificate trust issues by adding Base64 Root certificate authorities"
-	log "          to the client certificate store (cacert.pem). This addresses situations where clients fail "
-	log "          to connect due to lack of trust of internal Certificate Authorities"
-	log "          found in the Keychain (MacOS System Certificate Store)"
-	log "          The purpose of this script is to save days if not weeks of productivity loss due to the"
-	log "          lenghty troubleshooting of certificate trust and proxy issues"
-	logI "   Logs are saved in $teefile"
 	logI "Execution specifics..."
-	# logI "   Switch selection: $(printf "%s=%s "var "${var}" var_uninstall "${var_uninstall}" "${var}" KAlist "${KAlist}" pemscan "${pemscan}" pempatch "${pempatch}" patch_uninstall "${patch_uninstall}")"
 	logI "   Switch description: $switch"
 	logI "   This script is being executed by `whoami` / EUID: $EUID"
 	# Scanning and Patching requires user elevation...
@@ -193,18 +199,7 @@ fi
 
 # Welcoming stdin for elevated user
 if [ "$EUID" -eq 0 ]; then
-	clear
-	echo -e "\n"
-	echo "___________________________ - Elevated - ________________________________________________________________________________"
-	logI "This script resolves certificate trust issues by adding Base64 Root certificate authorities"
-	log "          to the client certificate store (cacert.pem). This addresses situations where clients fail "
-	log "          to connect due to lack of trust of internal Certificate Authorities"
-	log "          found in the Keychain (MacOS System Certificate Store)"
-	log "          The purpose of this script is to save days if not weeks of productivity loss due to the"
-	log "          lenghty troubleshooting of certificate trust and proxy issues"
-	logI "   Logs are saved in $teefile"
 	logI "Execution specifics..."
-	# logI "   Switch selection: $(printf "%s=%s "var "${var}" var_uninstall "${var_uninstall}" "${var}" KAlist "${KAlist}" pemscan "${pemscan}" pempatch "${pempatch}" patch_uninstall "${patch_uninstall}")"
 	logI "   Switch description: $switch"
 	logI "   This script is running elevated as `whoami`"
 	logged_user=$(stat -f "%Su" /dev/console)
@@ -215,6 +210,7 @@ logI "Verifying System requirements..."
 # Check if the operating system is Darwin (macOS)
 if [ "$(uname)" != "Darwin" ]; then log "Error   - This Script is meant to run on macOS, not on: $(uname -v)"; exit 1; fi
 logI "     Running on $(get_macos_version)"
+
 
 # Check if Curl and Homebrew are installed
 if ! command_exists brew; then logE " Homebrew is not installed. Please install it..."; else logI "     $(brew --version | awk {'print $1, $2'}) is already installed."; fi
