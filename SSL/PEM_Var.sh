@@ -76,7 +76,7 @@ extravar(){
 		  if [[ -n $line && $line =~ ^[A-Z0-9_-]+$ ]]; then
 		    variables+=("$line")
 		  fi
-		done < ssl_vars.config
+		done < "$extravarfile"
 
 		# Remove duplicates and sort
 		variables=($(printf "%s\n" "${variables[@]}" | sort -u))
