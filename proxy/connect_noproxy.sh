@@ -107,7 +107,7 @@ echo -en "\r\033[2K\033[F\033[2K\033[F\033[2K"
 
 # If we couldn't establish web connections against two websites, let's check basic network requirements and look for proxy settings
 if [[ $fail_count -gt 1 ]]; then
-  logI "We couldn't connect directly to most websites, so we might be proxied 👍...\n"
+  logI "We couldn't connect directly to most websites, so we might be proxied 👍..."
   logI "Performing additional diagnostics. Let's inspect the NICs..."
   conn_checks
   if [[ -n "$workingproxy" ]]; then
