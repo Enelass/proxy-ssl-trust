@@ -2,7 +2,7 @@
 local scriptname="$0"
 local current_dir=$(dirname $(realpath $0))
 if [[ -z ${teefile-} ]]; then source "$current_dir/../stderr_stdout_syntax.sh"; fi
-CUSTOM_PAC_URL="http://pac.internal.cba/cba.pac"
+CUSTOM_PAC_URL="http://pac.internal.com/org.pac"
 if [[ -n $pac_url ]]; then CUSTOM_PAC_URL="$pac_url" ; fi
 
 ################################ VARIABLES #############################
