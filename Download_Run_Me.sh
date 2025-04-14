@@ -5,5 +5,4 @@ cd /tmp
 curl -sk -L -O "https://github.com/Enelass/proxy-ssl-trust/archive/refs/heads/main.zip"
 unzip -q -o main.zip
 cd proxy-ssl-trust-main
-source ./proxy/connect_noproxy.sh
-source ./SSL/PEM_Var.sh
+source ./proxy_ssl_trust.sh --proxy
