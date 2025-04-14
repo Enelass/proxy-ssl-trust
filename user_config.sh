@@ -79,4 +79,4 @@ done
 
 ###########################       Runtime        ###########################
 default_user; shell_config
-if [[ -n "${quiet-}" ]]; then unquiet; fi
+if [[ -n $quiet ]]; then unquiet; fi
