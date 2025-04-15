@@ -1,16 +1,12 @@
 #!/bin/zsh
-script_name="$0"
-script_dir=$(dirname $(realpath $0))
-pem_error=false
+local scriptname=$(basename $(realpath $0))
+local current_dir=$(dirname $(realpath $0))
+local pem_error
 
-# If this is a standalone execution...
-if [[ -z "${teefile-}" ]]; then 
-    AppName="pem_integrity_check"
+if [[ -z "${BLUEW-}" ]]; then
+    source "$current_dir/../stderr_stdout_syntax.sh"
+    AppName="Pem_Integrity_Check"
     teefile="/tmp/$AppName.log"
-fi
-
-if [[ -z "${logI+x}" || -z "${logI}" ]]; then 
-    source "$script_dir/stderr_stdout_syntax.sh"
 fi
 
 # Help function
@@ -26,10 +22,10 @@ Description:
     The script displays a progress bar as it processes the certificates.
     If no PEM file path is specified as an argument, the script prompts the user to input the path interactively.
 Example Usage:
-    $script_name --path /path/to/certificate.pem     # Validates certificates in the specified PEM file.
-    $script_name --verbose --path /path/to/certificate.pem     # Validates  and display certificates subjects from the specified PEM file
-    $script_name -q -p /path/to/certificate.pem      # Validates certificates quietly and saves status in pem_error variable
-    $script_name                                     # Prompts for PEM file path interactively.
+    $scriptname --path /path/to/certificate.pem     # Validates certificates in the specified PEM file.
+    $scriptname --verbose --path /path/to/certificate.pem     # Validates  and display certificates subjects from the specified PEM file
+    $scriptname -q -p /path/to/certificate.pem      # Validates certificates quietly and saves status in pem_error variable
+    $scriptname                                     # Prompts for PEM file path interactively.
 Author:
     florian@photonsec.com.au
     github.com/Enelass"
@@ -94,7 +90,7 @@ pem_integrity_check(){
     show_progress_bar $current_cert_index $cert_count
     current_cert_index=$((current_cert_index + 1))
   done
-  echo
+  echo -en "\r\033[2K\033[F\033[2K";  # Clear the previous line
 }
 
 ###########################   Script SWITCHES   ###########################
@@ -129,10 +125,12 @@ while [[ "$#" -gt 0 ]]; do
 done
 
 ###############################   RUNTIME   ################################
+if [[ -z "${invoked-}" ]]; then clear; fi
+echo; logI "  ---   ${PINK}SCRIPT: $script_dir/$scriptname${NC}   ---"
+logI "        ${PINK}     The purpose of this script is to scan a PEM Certificate Store to ensure its integrity...${NC}"
+
 # If not invoked/sourced by another script, we'll set some variables for standalone use...
 if [[ -z "${invoked-}" ]]; then
-    clear
-    echo "$1 $2 $3 pem_file $pem_file"
     echo -e "Summary: This script checks the integrity of PEM files containing certificates by parsing them and validating each certificate using OpenSSL.
          It reads the PEM file, lists the certificates, and verifies each one. If any certificate is invalid, it logs an error. The script shows a
          progress bar as it processes the certificates. Additionally, it provides an option to input the PEM file path if not specified."
@@ -165,7 +163,7 @@ if [[ $cert_count1 -ne $cert_count2 ]]; then
 fi
 
 # Time to process that good-looking pem file...
-pem_integrity_check "$pem_file"
+pem_integrity_check --path "$pem_file"
 
 if [[ "$pem_error" == "true" ]]; then
     logW "This pem file is corrupted or contains corrupted Base 64 entries (certificates)"
@@ -176,7 +174,4 @@ else
 fi
 
 if [[ $verbose -eq 1 ]]; then echo "$cert_CNs"; fi
-
-if [[ -n "${silent-}" || -n "${quiet-}" ]]; then
-    unquiet
-fi
+if [[ -n "$silent" || -n $quiet ]]; then unquiet; fi

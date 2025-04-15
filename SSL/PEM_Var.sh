@@ -19,8 +19,8 @@
 ####################################################################################
 version=0.2
 cacertURL="https://curl.se/ca/cacert.pem"
+local scriptname=$(basename $(realpath $0))
 local current_dir=$(dirname $(realpath $0))
-local scriptname="$0"
 variables=("REQUESTS_CA_BUNDLE" "SSL_CERT_FILE")
 extravarfile="$current_dir/ssl_vars.config"
 
@@ -38,12 +38,6 @@ if [[ -z "${invoked-}" ]]; then
     teefile="/tmp/$AppName.log"
     version=0.2
     ######################################################################################
-
-    ####################################### Defining functions ###########################
-    # Logging function
-    timestamp() { date "+%Y-%m-%d %H:%M:%S" }
-    log() { local message="$1"; echo "$(timestamp) $message" | tee -a $teefile }
-    handle_error() { local message="$1"; log "$message"; exit 1 } # Error handling function
 fi
 
 
@@ -212,7 +206,8 @@ while [[ $# -gt 0 ]]; do
   case $1 in
     --help|-h) help ;;								
     --uninstall|-u) uninstall ;;					# Wipe everything this script did: custom certificate store (cacert.pem) and restore original ~/.zshrc (pre-reuntime of this script)
-	--download|-d) cacert_download ;;				# It will download and build a custom certificate store (cacert.pem), but won;t touch the Env variables in user's Shell Config 
+	--download|-d) cacert_download ;;				# It will download and build a custom certificate store (cacert.pem), but won't touch the Env variables in user's Shell Config 
+	--daemon|-D) daemon ;;							# It will create a LaunchAgent in User Directory to periodically update the Custom Certificate so it remains up to date...
 	--overwrite|-o) overwrite=true ; uninstall ;;	# It will force rewrite the cacert.pem + Env variables in user's Shell Config 
    *) ;;
   esac
@@ -226,11 +221,11 @@ logI "        ${PINK}     This script will download a public Certificate Store a
 logI "        ${PINK}     It will then create environment variable in the user shell config and reference it...${NC}"
 
 
-source "$current_dir/../user_config.sh"	# Let's identify the logged-in user, it's home directory, it's default Shell interpreter and associated config file...
+source "$current_dir/../user_config.sh" --quiet	# Let's identify the logged-in user, it's home directory, it's default Shell interpreter and associated config file...
 cacert_download	# Let's download cacert.pem 
 
 # Check if the certificate authority file is valid
-# cacert_integrity_check $customcacert
+source "$current_dir/PEM_Check.sh" --path "$customcacert"
 
 # List the Internal Root CAs and patch cacert.pem with internal Root CAs
 source "$current_dir/Keychain_InternalCAs.sh" --silent		# This command will invoke the script and return variable $CAList which lists the names of Internal Signing Root CAs from the Keychain Access in MacOS

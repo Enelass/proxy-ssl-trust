@@ -179,7 +179,7 @@ trap 'stop_spinner; play_exit > /dev/null 2>&1' EXIT
 play
 
 clear
-logI "  ---   ${PINK}SCRIPT: $scriptname${NC}   ---"
+logI "  ---   ${PINK}SCRIPT: $script_dir/$scriptname${NC}   ---"
 logI "        ${PINK}     This script serves as an entry point for various proxy and SSL trust utilities.${NC}	"
 logI "Summary: This script performs various operations related to certificate trust and proxy configurations on a MacOS system"
 logI "         It is designed to improve connectivity by managing certificates and proxy settings, ensuring that internal CAs are"

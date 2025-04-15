@@ -1,5 +1,5 @@
 #!/bin/zsh
-local scriptname="$0"
+local scriptname=$(basename $(realpath $0))
 local current_dir=$(dirname $(realpath $0))
 if [[ -z ${logI-} ]]; then source "$current_dir/../stderr_stdout_syntax.sh"; fi
 
@@ -38,7 +38,7 @@ get_proxy_settings() {
 }
 
 ###################################### RUNTIME ##########################################
-echo; logI "  ---   ${PINK}SCRIPT: $scriptname${NC}   ---"
+echo; logI "  ---   ${PINK}SCRIPT: $script_dir/$scriptname${NC}   ---"
 logI "        ${PINK}     This script is intended to verify network connectivity and whether a PAC file can be found${NC}"
 
 # Fetch all network services, excluding the first line

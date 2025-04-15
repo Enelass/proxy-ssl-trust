@@ -1,11 +1,11 @@
 #!/bin/zsh
 # Author: Florian Bidabe
 # Date of Release: 14-Mar-2025
-# Description: This script manages and updates certificate stores on macOS systems by adding internal Root CAs from the OS Keychain Manager to specified PEM certificate stores. It ensures that only new or updated certificates are added, maintaining a backup of the original PEM files for restoration if needed.
-
+# Description: This script manages and updates certificate stores on macOS systems by adding internal Root CAs
+# from the OS Keychain Manager to specified PEM certificate stores. It ensures that only new or updated certificates
+# are added, maintaining a backup of the original PEM files for restoration if needed.
 # This script is designed to be part of a larger system for managing certificate stores on macOS. It relies on other scripts and files to function correctly. Ensure all dependencies are in place and correctly configured before running this script.
-
-The script adds the Base64 Root           #
+# The script adds the Base64 Root           #
 #               certificate authorities to the various client certificate store    #
 #               conventionally named (cacert.pem)
 
@@ -16,10 +16,11 @@ The script adds the Base64 Root           #
 # 4. Ensure the `cacertdb` and `previousdb` files are correctly populated and accessible.
 # 5. Source this script from the main script (`proxy_cert_auto_setup.sh`) to ensure it runs in the correct context.
 
-
+local scriptname=$(basename $(realpath $0))
+local current_dir=$(dirname $(realpath $0))
 
 # Condition to verify is teefile (the log file) is defined. If not, this script wasn't sourced/called/invoked by the main, so we'll abort
-if [[ -z "${teefile-}" ]]; then 
+if [[ -z "${BLUEW-}" ]]; then 
     echo -e "WARNING - This script is not meant to be executed directly!\nIt will only run if invoked/sourced from proxy_cert_auto_setup.sh"
     exit 1
 fi
@@ -131,8 +132,11 @@ while [[ $# -gt 0 ]]; do
   shift
 done
 
+echo; logI "  ---   ${PINK}SCRIPT: $script_dir/$scriptname${NC}   ---"
+logI "        ${PINK}     This script is intended to patch a supplied (by --scan or PEM_Scan.sh) list of PEM Certificate Stores...${NC}"
+
 # We need both a list of MacOS internal Root CAs (see command below) to add to each PEM certificate store we have (cacertdb IF statement below as well)
-source ./Keychain_InternalCAs.sh --silent		# This command will invoke the script with variable $IntCAList which list the names of Internal Signing Root CAs
+source "$current_dir/Keychain_InternalCAs.sh" --silent		# This command will invoke the script with variable $IntCAList which list the names of Internal Signing Root CAs
 
 log "Info    -     We will now patch the PEM certificate store we know about..."
 	if [[ ! -f "$cacertdb" ]]; then

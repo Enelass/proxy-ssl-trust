@@ -2,7 +2,7 @@
 # Script to extract proxy addresses from PAC file and test connections
 ################################# Variables ########################################
 
-local scriptname="$0"
+local scriptname=$(basename $(realpath $0))
 if [[ -z ${BLUEW-} ]]; then source "$current_dir/../stderr_stdout_syntax.sh"; fi
 # You can manually set your the PAC file URL if running this script in standalone mode.
 # If invoked by other scripts, the PAC_FILE_URL will be overwritten by the one found in the system (interfaces or from cutill)...
@@ -58,7 +58,7 @@ test_proxy_connection() {
 
 ##################################### Runtime ######################################
 
-echo; logI "  ---   ${PINK}SCRIPT: $scriptname${NC}   ---"
+echo; logI "  ---   ${PINK}SCRIPT: $script_dir/$scriptname${NC}   ---"
 logI "        ${PINK}     This script is meant to parse a PAC File and extract a working proxy address and port${NC}"
 
 # Download the PAC file silently

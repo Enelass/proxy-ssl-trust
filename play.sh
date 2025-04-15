@@ -1,5 +1,5 @@
 #!/bin/zsh
-AUDIO_FILE="$(dirname $(realpath $0))/Ballaké.m4a"
+AUDIO_FILE="$(dirname $(realpath $0))/Ballake.m4a"
 # trap play_sigint SIGINT
 # trap play_exit EXIT
 

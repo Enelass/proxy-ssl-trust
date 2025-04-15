@@ -1,5 +1,5 @@
 #!/bin/zsh
-local scriptname="$0"
+local scriptname=$(basename $(realpath $0))
 local current_dir=$(dirname $(realpath $0))
 if [[ -z ${teefile-} ]]; then source "$current_dir/../stderr_stdout_syntax.sh"; fi
 CUSTOM_PAC_URL="http://pac.internal.com/org.pac"
@@ -69,7 +69,7 @@ reload_alpaca_daemon() {
 
 ################################ RUNTIME #############################
 
-echo; logI "  ---   ${PINK}SCRIPT: $scriptname${NC}   ---"
+echo; logI "  ---   ${PINK}SCRIPT: $script_dir/$scriptname${NC}   ---"
 logI "        ${PINK}     It is intended to check if connection can be established over the local proxy Alpaca${NC}"
 
 export {ALL,all,HTTP,http,HTTPS,https}_proxy="http://localhost:3128"

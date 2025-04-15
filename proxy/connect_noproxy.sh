@@ -1,5 +1,5 @@
 #!/bin/zsh
-local scriptname="$0"
+local scriptname=$(basename $(realpath $0))
 local current_dir=$(dirname $(realpath $0))
 if [[ -z ${teefile-} ]]; then source "$current_dir/../stderr_stdout_syntax.sh"; fi
 
@@ -92,7 +92,7 @@ conn_checks(){
 
 unset {ALL,all,HTTP,http,HTTPS,https}_proxy  # We need to start clean... no proxy settings!
 
-echo; logI "  ---   ${PINK}SCRIPT: $scriptname${NC}   ---"
+echo; logI "  ---   ${PINK}SCRIPT: $script_dir/$scriptname${NC}   ---"
 logI "        ${PINK}     It is intended to check if connection can be established without proxy${NC}"
 logI "Proxy environment variables have been unset."
 

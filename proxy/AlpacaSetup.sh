@@ -19,7 +19,7 @@
 
 #################################### Variables ####################################
 version="v0.2"
-local scriptname="$0"
+local scriptname=$(basename $(realpath $0))
 local current_dir=$(dirname $(realpath $0))
 if [[ -z ${BLUEW-} ]]; then source "$current_dir/../stderr_stdout_syntax.sh"; fi
 variables=("all_proxy" "ALL_PROXY" "http_proxy" "HTTP_PROXY" "https_proxy" "HTTPS_PROXY" "no_proxy" "NO_PROXY")	# Proxy Environment Variables
@@ -321,7 +321,7 @@ if [[ uninst -eq 1 ]]; then
 fi
 
 
-echo; logI "  ---   ${PINK}SCRIPT: $scriptname${NC}   ---"
+echo; logI "  ---   ${PINK}SCRIPT: $script_dir/$scriptname${NC}   ---"
 logI "        ${PINK}     This script is intended to check if Alpaca Daemon is setup and running on TCP 3128...${NC}"
 logI "${GREEN}REQUIREMENTS - ${NC}Running a few checks prior to installing Alpaca..."
 

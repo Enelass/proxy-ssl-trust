@@ -17,18 +17,16 @@
 # REVISION: 0.4
 #########################################################
 
-
-
 # Condition to verify is teefile (the log file) is defined. If not, this script wasn't sourced/called/invoked by the main, so we'll set a few vars
-script_name="$0"
-script_dir=$(dirname $(realpath $0))
+local scriptname=$(basename $(realpath $0))
+local current_dir=$(dirname $(realpath $0))
 if [[ -z ${logI-} ]]; then
 	clear
 	AppName="PEM_Scanner"
 	teefile="/tmp/$AppName.log"
-	source "$script_dir/stderr_stdout_syntax.sh"
+	source "$current_dir/../stderr_stdout_syntax.sh"
 fi
-if [[ -z "${HOME_DIR-}" ]]; then source "$script_dir/user_config.sh" --quiet; fi
+if [[ -z "${HOME_DIR-}" ]]; then source "$current_dir/../user_config.sh" --quiet; fi
 
 ################################## Variables ###################################
 CDir="$HOME_DIR/Applications/proxy_ssl_trust/scan"		# Where these files will be stored
@@ -47,7 +45,7 @@ prevpemdb="$CDir/pemdb.backup.csv"						# The previous Db File we use to compare
 # Help function to display usage guide and available options
 help() {
   cat << EOF
-Usage: $script_name [OPTIONS]
+Usage: $scriptname [OPTIONS]
 
 This script searches and enriches a list of PEM certificate authority files found in the MacOS System
 and User directories. It creates a CSV list of these files and performs integrity checks to verify their authenticity.
@@ -63,19 +61,19 @@ Options:
 
 Examples:
   
-  $script_name --quick
+  $scriptname --quick
     Search for PEM files in the current User directory and system and generate a CSV list.
 
-  sudo $script_name --user
+  sudo $scriptname --user
     Search for PEM files in all Users directories and generate a CSV list.
 
-  sudo $script_name --system
+  sudo $scriptname --system
     Search for PEM files in the MacOS System directory and generate a CSV list.
 
-  sudo $script_name --quick --system
+  sudo $scriptname --quick --system
     Perform a quick search for PEM files in the System context without forcing a full rescan.
 
-  sudo $script_name --uninstall
+  sudo $scriptname --uninstall
     Uninstall and remove all files created by the script.
 
 Author:
@@ -139,7 +137,7 @@ enrich_list() {
 system() {
 	if [[ "$EUID" -ne 0 && -z $quick ]]; then
 		logW "User elevation is required to scan the system"
-		logW "If you wish to scan only the current user, please run ${GREENW}sudo $script_name${NC}...\n"
+		logW "If you wish to scan only the current user, please run ${GREENW}sudo $scriptname${NC}...\n"
 		help
 		exit 1
 	fi
@@ -158,7 +156,7 @@ system() {
 		fi
 	else
 		logI "    Initialising \`locatedb\`, please wait..."; cd /
-		if [[ "$EUID" -ne 0 ]]; then logW "It looks like locate.updatedb was never initialised so using it might fail... to initialise it, run $script_name as root/sudo"; fi
+		if [[ "$EUID" -ne 0 ]]; then logW "It looks like locate.updatedb was never initialised so using it might fail... to initialise it, run $scriptname as root/sudo"; fi
 		/usr/libexec/locate.updatedb 2>/dev/null 
 		echo > $CDir/locate.enabled; chflags hidden $CDir/locate.enabled
 		logI "    \`locatedb\` has finished indexing system files..."
@@ -182,7 +180,7 @@ system() {
 user_context() {
 	if [[ "$EUID" -ne 0 && -z $quick ]]; then
 		logW "User elevation is required to scan all user directoties"
-		logW "If you wish to scan only the current user, please run ${GREENW}$script_name --quick --user${NC}\n"
+		logW "If you wish to scan only the current user, please run ${GREENW}$scriptname --quick --user${NC}\n"
 		help
 		exit 1
 	fi
@@ -286,6 +284,9 @@ while [[ $# -gt 0 ]]; do
   esac
   shift
 done
+
+echo; logI "  ---   ${PINK}SCRIPT: $script_dir/$scriptname${NC}   ---"
+logI "        ${PINK}     The purpose of this script is to find PEM Certificate Store on MacOS System...${NC}"
 
 if [[ "$EUID" -ne 0 && -z $quick ]]; then
 	logW "User elevation is required. Please run again as root or sudo\n"
