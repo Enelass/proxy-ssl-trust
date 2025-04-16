@@ -174,4 +174,4 @@ else
 fi
 
 if [[ $verbose -eq 1 ]]; then echo "$cert_CNs"; fi
-if [[ -n "$silent" || -n $quiet ]]; then unquiet; fi
+if [[ -n "$silent" || -n $quiet ]]; then unquiet 2>/dev/null; fi

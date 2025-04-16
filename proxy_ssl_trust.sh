@@ -33,12 +33,6 @@ if [[ -z ${BLUEW-} ]]; then
 fi
 ####################################### Defining functions ###########################	
 
-# Logging function
-timestamp() { date "+%Y-%m-%d %H:%M:%S" }
-log() { local message="$1"; echo "$(timestamp) $message" | tee -a $teefile }
-logonly() { local message="$1"; echo "$(timestamp) - $message" >> $teefile }
-handle_error() { local message="$1"; log "$message"; exit 1 } # Error handling function
-
 # Display the Help Menu
 help() {
   script="$1"

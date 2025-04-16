@@ -50,11 +50,8 @@ shell_config() {
 default_user() {
 	#log "Info    - Identifying the default user"... 
 	logged_user=$(stat -f "%Su" /dev/console)
-	if [ "$EUID" -ne 0 ]; then # Standard sser
+	if [ "$EUID" -ne 0 ]; then # Standard User
 		logS "    Logged-in user is identified as $logged_user" 
-	# else #Root User
-	# 	logW " This script should not run as root, aborting..."
-	# 	if [[ -n "${logged_user}" ]]; then logE " Please run it with $logged_user"; fi
 	fi
 
 	HOME_DIR=$(dscl . -read /Users/$logged_user NFSHomeDirectory | awk '{print $2}')

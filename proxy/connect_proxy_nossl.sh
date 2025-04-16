@@ -89,8 +89,13 @@ if [[ -n $proxy_not_working ]]; then
       if [[ -f "$AlpacaDaemon_path" ]]; then
           logI "      Let's inspect the config file in "$AlpacaDaemon_path"..."
           logI "      We're looking for $CUSTOM_PAC_URL entry..."
-          if ! $(echo "$AlpacaDaemon_path" | grep "$CUSTOM_PAC_URL"); then
-            if ! $(echo "$AlpacaDaemon_path" | grep '<string>-C</string>'); then
+          if cat "$AlpacaDaemon_path" | grep -q "$CUSTOM_PAC_URL"; then
+            if cat "$AlpacaDaemon_path" | grep -q '<string>-C</string>'; then
+              logI "      PAC URL is already specified in the file!..."
+              logW "      Alpaca should work but isn't..."
+              logE "Please uninstall and reinstall: ${BLUEW}./AlpacaSetup --uninstall${NC}"
+            fi
+          else
               logW "      PAC URL is not specified in the file! Let's add it and test again..."
               sed -i '' '/<key>ProgramArguments<\/key>/,/<\/array>/ {
     /<string>[^<]*<\/string>/a\
@@ -100,9 +105,6 @@ if [[ -n $proxy_not_working ]]; then
               reload_alpaca_daemon
               # Check AGAIN if HTTPS requests are getting throught...
               webconn_checks
-            fi  
-          else
-              logI "      PAC URL is specified..."
           fi
       else
           logE "Please troubleshooting Alpaca proxy manually or uninstall it..."
