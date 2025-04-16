@@ -10,7 +10,7 @@
 *.pfx
 *.jks
 *.p8
-*.txt
+*.webloc
 
 # macOS system files
 .DS_Store

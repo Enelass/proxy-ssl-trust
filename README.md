@@ -2,12 +2,11 @@
 
 ## Description
 
-The purpose of this suite of scripts is to fix certificate trust issues where clients (CLI mostly but also a few GUIs) fail to connect as they do not trust Internal Certificate Authorities found in KeychainAccess. This script invokes other scripts to detect proxy settings and create persistent connectivity for the current user. It also supports a variety of switches for advanced troubleshooting.
+The purpose of this suite of scripts is to fix certificate trust issues where clients (CLI mostly but also a few GUIs) fail to connect as they do not trust Internal Certificate Authorities found in KeychainAccess. This script invokes other scripts to detect proxy settings and create persistent connectivity for CLI. It also supports a variety of switches for advanced troubleshooting.
 
 ## Author
 
-- Florian Bidabe
-
+- Florian Bidabe  /  photonsec.com.au
 ## Version
 
 - **Current Version**: 1.7
@@ -16,12 +15,21 @@ The purpose of this suite of scripts is to fix certificate trust issues where cl
 
 ## Usage
 
-This script is designed for macOS systems and requires `zsh` to function. Various switches have been provided to perform specific tasks:
+This script is designed for macOS systems and requires `Homebrew` to function.
+Various switches have been provided to perform specific tasks.
+
+
+### Getting Started
+The following command will download the suite of tools to `~/Applications/proxy-ssl-trust`. It will then execute the default option, equivalent to running `./Proxy_SSL_Trust.sh --proxy`, which configures macOS CLI to use a proxy and PAC file, and addresses SSL trust issues.
+
+```zsh
+/bin/zsh -c "$(curl -fsSL https://raw.githubusercontent.com/Enelass/proxy-ssl-trust/refs/heads/main/lib/download_run_me.sh)"
+```
 
 ### General Usage
 
 ```zsh
-./Proxy_SSL_Trust.sh [OPTION]...
+~/Applications/proxy-ssl-trust/Proxy_SSL_Trust.sh [OPTION]...
 ```
 
 ### Options
@@ -53,47 +61,30 @@ This script is designed for macOS systems and requires `zsh` to function. Variou
     ```zsh
     ./Proxy_SSL_Trust.sh --list
     ```
+    This is an alias for `./SSL/Keychain_InternalCAs.sh`
 
 4. **Scan for PEM Certificate Stores**:
     ```zsh
     ./Proxy_SSL_Trust.sh --scan
     ```
+    This is an alias for `./SSL/PEM_Scan.sh`
 
 5. **Set Environment Variable for Certificate Store**:
     ```zsh
     ./Proxy_SSL_Trust.sh --var
     ```
+    This is an alias for `./SSL/PEM_Var.sh`
 
-6. **Revert Environment Variable Settings**:
-    ```zsh
-    ./Proxy_SSL_Trust.sh --var_uninstall
-    ```
-
-7. **Patch Known PEM Certificate Stores**:
+6. **Patch Known PEM Certificate Stores**:
     ```zsh
     ./Proxy_SSL_Trust.sh --patch
     ```
 
-8. **Revert PEM Patching**:
-    ```zsh
-    ./Proxy_SSL_Trust.sh --patch_uninstall
-    ```
-
-9. **Set up Proxy and PAC File**:
+7. **Set up Proxy and PAC File**:
     ```zsh
     ./Proxy_SSL_Trust.sh --proxy
     ```
-
-10. **Uninstall Proxy Settings**:
-    ```zsh
-    ./Proxy_SSL_Trust.sh --proxy_uninstall
-    ```
-
-## Notes
-
-- Ensure you have the necessary permissions to run this script as it may require elevated privileges for certain operations.
-- The script checks for the presence of critical tools like `Homebrew` and `curl`. If not found, the script attempts to install them.
-- The script logs its operations and caps the log file at 10,000 lines to prevent overgrowth.
+    This is an alias for `./proxy/connect_noproxy.sh`
 
 ## Logging
 
