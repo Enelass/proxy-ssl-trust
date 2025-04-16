@@ -1,56 +1,108 @@
-# CATrust.sh
-This script aims to save days if not weeks of productivity loss due to the lengthy troubleshooting of certificate trust and proxy issues. It is designed to fix certificate trust issues where any client fails to connect as it does not trust MacOS Certificate Authorities found in the Keychain (System Store) issued internally in the Group. The script adds the Base64 Root certificate authorities to the various client certificate store conventionally named (cacert.pem).
+# Proxy_SSL_Trust
 
 ## Description
 
-The purpose of this script is to resolve certificate trust issues by adding Base64 Root certificate authorities to the client certificate store (cacert.pem). This addresses situations where clients fail to connect due to a lack of trust in the Group's internal Certificate Authorities typically found in the Keychain (MacOS System Certificate Store).
-
-## Requirements
-
-- CommBank macOS SOE
-- Homebrew
-- Local admin
-
-## Usage
-
-1. Make the script executable using the command `chmod +x CATrust.sh`.
-2. Run the script using the command `./CATrust.sh`.
-
-## Screenshot
-
-![Alt Text](assets/screenshot.png)
-
-## Functions
-
-- **Logging**: Logs messages to the console and a log file in /tmp
-
-- **List Enrichment**: Enriches the list of cacert.pem files with additional information such as the application name, file path, magic byte, and SHA1 signature.
-
-- **Optimized Runtime**: Each `cacert.pem` file is only patched if its SHA1 signature has changed. The Base64 Internal Root CA is only added if it is not already present in the certificate store. The script uses both GNU `find` and `locate` for efficient file searching. `locate` is very fast but cannot scan `/Users` directories. `find` is slower but can search all files, complying with POSIX file permissions and macOS ACLs.
-
-- **Security Checks**: Each modified file will have backups (no more than 4 timestamped backups + the original file). The script will exit if anything goes wrong.
-
-- **Certificate Addition**: Adds the Base64 internal certificates to various local certificate stores (cacert.pem) to avoid certificate trust issues.
-
-## High-Level Workflow
-
-1. **Check Requirements**: Ensures the script is running with root privileges and verifies system requirements.
-2. **Search for cacert.pem Files**: Uses `locate` and `find` to search for cacert.pem files on the system.
-3. **Maintain Database**: Maintains a database of cacert.pem files with integrity checks.
-4. **Process cacert.pem Files**: Processes each cacert.pem file one by one, checking if it exists in the previous database and if the SHA1 signature has changed. If the SHA1 signature has changed, the script patches the cacert.pem file.
-
-This script aims to save days if not weeks of productivity loss due to the lengthy troubleshooting of certificate trust and proxy issues.
-
-
-## License
-
-This script is licensed under a license agreement. Please refer to the [LICENSE](LICENSE.md) file for the full terms and conditions.
-
-
-## Support
-
-For support, reach out to Florian Bidabe and forward your log file located in /tmp
+The purpose of this suite of scripts is to fix certificate trust issues where clients (CLI mostly but also a few GUIs) fail to connect as they do not trust Internal Certificate Authorities found in KeychainAccess. This script invokes other scripts to detect proxy settings and create persistent connectivity for the current user. It also supports a variety of switches for advanced troubleshooting.
 
 ## Author
 
-- **Florian Bidabe**
+- Florian Bidabe
+
+## Version
+
+- **Current Version**: 1.7
+- **Initial Release Date**: 19-Sep-2024
+- **Last Release Date**: 30-Mar-2025
+
+## Usage
+
+This script is designed for macOS systems and requires `zsh` to function. Various switches have been provided to perform specific tasks:
+
+### General Usage
+
+```zsh
+./Proxy_SSL_Trust.sh [OPTION]...
+```
+
+### Options
+
+- `--help, -h`: Show the help menu.
+- `--version, -v`: Show the version information.
+- `--list, -l`: List all the signing Root CAs from the macOS Keychain Access. This is useful to check what Root CAs are supplied or performing SSL Inspection.
+- `--scan, -s`: Scan for PEM Certificate Stores on the system without patching. Useful to locate software certificate stores.
+- `--var`: Set default shell environment variable to a known PEM Certificate Store containing internal and Public Root CA. Useful for quick fixes in user context.
+- `--var_uninstall`: Revert any changes made by `--var`, restoring the original state.
+- `--patch, -p`: Patch known PEM Certificate Stores (requires `--scan`). Useful for patching known certificate stores (not recommended).
+- `--patch_uninstall`: Revert any changes made by `--patch`, restoring the original state.
+- `--proxy`: Set up proxy and PAC file & install Alpaca as a daemon.
+- `--proxy_uninstall`: Uninstall proxy and PAC settings.
+
+### Examples
+
+1. **Show Help Menu**:
+    ```zsh
+    ./Proxy_SSL_Trust.sh --help
+    ```
+
+2. **Show Version Information**:
+    ```zsh
+    ./Proxy_SSL_Trust.sh --version
+    ```
+
+3. **List Root CAs from Keychain Access**:
+    ```zsh
+    ./Proxy_SSL_Trust.sh --list
+    ```
+
+4. **Scan for PEM Certificate Stores**:
+    ```zsh
+    ./Proxy_SSL_Trust.sh --scan
+    ```
+
+5. **Set Environment Variable for Certificate Store**:
+    ```zsh
+    ./Proxy_SSL_Trust.sh --var
+    ```
+
+6. **Revert Environment Variable Settings**:
+    ```zsh
+    ./Proxy_SSL_Trust.sh --var_uninstall
+    ```
+
+7. **Patch Known PEM Certificate Stores**:
+    ```zsh
+    ./Proxy_SSL_Trust.sh --patch
+    ```
+
+8. **Revert PEM Patching**:
+    ```zsh
+    ./Proxy_SSL_Trust.sh --patch_uninstall
+    ```
+
+9. **Set up Proxy and PAC File**:
+    ```zsh
+    ./Proxy_SSL_Trust.sh --proxy
+    ```
+
+10. **Uninstall Proxy Settings**:
+    ```zsh
+    ./Proxy_SSL_Trust.sh --proxy_uninstall
+    ```
+
+## Notes
+
+- Ensure you have the necessary permissions to run this script as it may require elevated privileges for certain operations.
+- The script checks for the presence of critical tools like `Homebrew` and `curl`. If not found, the script attempts to install them.
+- The script logs its operations and caps the log file at 10,000 lines to prevent overgrowth.
+
+## Logging
+
+Log files are created in `/tmp` directory with the name `Proxy_SSL_Trust.log`. Ensure you have the necessary permissions to write logs in `/tmp`.
+
+## Contact
+
+For any issues or support, you can reach out to the author at florian@photonsec.com.au.
+
+GitHub Repository: [github.com/Enelass](https://github.com/Enelass)
+
+---

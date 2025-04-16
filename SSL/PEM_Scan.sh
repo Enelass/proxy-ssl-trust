@@ -24,9 +24,9 @@ if [[ -z ${logI-} ]]; then
 	clear
 	AppName="PEM_Scanner"
 	teefile="/tmp/$AppName.log"
-	source "$current_dir/../stderr_stdout_syntax.sh"
+	source "$current_dir/../lib/stderr_stdout_syntax.sh"
 fi
-if [[ -z "${HOME_DIR-}" ]]; then source "$current_dir/../user_config.sh" --quiet; fi
+if [[ -z "${HOME_DIR-}" ]]; then source "$current_dir/../lib/user_config.sh" --quiet; fi
 
 ################################## Variables ###################################
 CDir="$HOME_DIR/Applications/proxy_ssl_trust/scan"		# Where these files will be stored

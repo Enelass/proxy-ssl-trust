@@ -28,8 +28,8 @@ script_dir=$(dirname $(realpath $0))
 teefile="/tmp/$AppName.log"
 invoked=true	# To instruct other scripts that we sourced them... 
 if [[ -z ${BLUEW-} ]]; then 
-    source "$script_dir/play.sh"
-    source "$script_dir/stderr_stdout_syntax.sh"
+    source "$script_dir/lib/play.sh"
+    source "$script_dir/lib/stderr_stdout_syntax.sh"
 fi
 ####################################### Defining functions ###########################	
 

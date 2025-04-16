@@ -3,7 +3,8 @@
 ################################# Variables ########################################
 
 local scriptname=$(basename $(realpath $0))
-if [[ -z ${BLUEW-} ]]; then source "$current_dir/../stderr_stdout_syntax.sh"; fi
+local current_dir=$(dirname $(realpath $0))
+if [[ -z ${BLUEW-} ]]; then source "$current_dir/../lib/stderr_stdout_syntax.sh"; fi
 # You can manually set your the PAC file URL if running this script in standalone mode.
 # If invoked by other scripts, the PAC_FILE_URL will be overwritten by the one found in the system (interfaces or from cutill)...
 PAC_FILE_URL="http://example.com/proxy.pac"

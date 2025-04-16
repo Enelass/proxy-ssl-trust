@@ -21,7 +21,7 @@
 version="v0.2"
 local scriptname=$(basename $(realpath $0))
 local current_dir=$(dirname $(realpath $0))
-if [[ -z ${BLUEW-} ]]; then source "$current_dir/../stderr_stdout_syntax.sh"; fi
+if [[ -z ${BLUEW-} ]]; then source "$current_dir/../lib/stderr_stdout_syntax.sh"; fi
 variables=("all_proxy" "ALL_PROXY" "http_proxy" "HTTP_PROXY" "https_proxy" "HTTPS_PROXY" "no_proxy" "NO_PROXY")	# Proxy Environment Variables
 
 ########################## Standalone Exec - Specifics #############################
@@ -67,7 +67,7 @@ uninstall() {
 
 shell_var(){
 	# Calling default user and Shell config scripts since these variables are a requirement 
-	source "$current_dir/../user_config.sh" --quiet
+	source "$current_dir/../lib/user_config.sh" --quiet
 	logI "${GREEN}   Env Var - ${NC}Are proxy related Environment Variables currently set ?"
 	# Loop through each variable and check if it is set
 	for var in "${variables[@]}"; do
@@ -241,7 +241,7 @@ alpaca_service() {
 		if [[ ! $alprunning == "true" ]]; then
 			logW "  Service failed to start after 3 attempts."
 			logI "  We'll attempt reinstalling Alpaca..."
-			if [[ -z "${HOME_DIR-}" ]]; then source "$current_dir/../user_config.sh" --quiet; fi
+			if [[ -z "${HOME_DIR-}" ]]; then source "$current_dir/../lib/user_config.sh" --quiet; fi
 			uninst=1; uninstall; sleep 5
 			install_alpaca; sleep 5
 			logI "  Last rounds of attempts to start Alpaca"
@@ -316,12 +316,12 @@ done
 # If we want to uninstall, that'd be now...
 if [[ uninst -eq 1 ]]; then
 	# Uninstall requires default user and Shell config variables...
-	if [[ -z "${HOME_DIR-}" ]]; then source "$script_dir/user_config.sh" --quiet; fi
+	if [[ -z "${HOME_DIR-}" ]]; then source "$current_dir/../lib/user_config.sh" --quiet; fi
 	uninstall
 fi
 
 
-echo; logI "  ---   ${PINK}SCRIPT: $script_dir/$scriptname${NC}   ---"
+echo; logI "  ---   ${PINK}SCRIPT: $current_dir/$scriptname${NC}   ---"
 logI "        ${PINK}     This script is intended to check if Alpaca Daemon is setup and running on TCP 3128...${NC}"
 logI "${GREEN}REQUIREMENTS - ${NC}Running a few checks prior to installing Alpaca..."
 

@@ -1,7 +1,7 @@
 #!/bin/zsh
 local scriptname=$(basename $(realpath $0))
 local current_dir=$(dirname $(realpath $0))
-if [[ -z ${teefile-} ]]; then source "$current_dir/../stderr_stdout_syntax.sh"; fi
+if [[ -z ${teefile-} ]]; then source "$current_dir/../lib/stderr_stdout_syntax.sh"; fi
 
 ################################ VARIABLES #############################
 # List of websites to check for webconn_checks()
@@ -107,7 +107,7 @@ if [[ $fail_count -ge 2 ]]; then
 
   if [[ -n "$workingproxy" ]]; then
     logI "Good news, we have found a pac file and a working proxy, let's install Alpaca to make use of it..."
-    source "$(dirname $(realpath $0))/AlpacaSetup.sh"
+    source "$current_dir/AlpacaSetup.sh"
   else
     logW "We haven't found any working proxy from the PAC file, either they're all down, or we were too aggressive on the timing"
     logE "Please increase timeout variable in pac_proxy_extract.sh and try again..." 
@@ -117,5 +117,5 @@ else
   logI "We were able to connect directly to most websites, we are probably not be behind a proxy..."
   logI "If you believe this is wrong, please add some known proxied websites to ./websites.config"
   logI "We will now test web requests and whether these are SSL intercepted or not..."
-  source "$(dirname $(realpath $0))/connect_ssl.sh"
+  source "$current_dir/connect_ssl.sh"
 fi

@@ -4,7 +4,7 @@ local current_dir=$(dirname $(realpath $0))
 local pem_error
 
 if [[ -z "${BLUEW-}" ]]; then
-    source "$current_dir/../stderr_stdout_syntax.sh"
+    source "$current_dir/../lib/stderr_stdout_syntax.sh"
     AppName="Pem_Integrity_Check"
     teefile="/tmp/$AppName.log"
 fi

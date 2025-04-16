@@ -24,7 +24,7 @@ version=0.3
 local scriptname=$(basename $(realpath $0))
 local current_dir=$(dirname $(realpath $0))
 if [[ -z "${teefile-}" ]]; then AppName="KeychainInternalCAs"; teefile="/tmp/$AppName.log"; fi
-if [[ -z ${logI-} ]]; then source "$current_dir/../stderr_stdout_syntax.sh"; fi
+if [[ -z ${logI-} ]]; then source "$current_dir/../lib/stderr_stdout_syntax.sh"; fi
 
 #################################  Functions ########################################
 # Function to display the Help Menu

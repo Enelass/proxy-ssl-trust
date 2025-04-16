@@ -9,13 +9,6 @@
 #               certificate authorities to the various client certificate store    #
 #               conventionally named (cacert.pem)
 
-# Usage:
-# 1. Ensure the `teefile` variable is defined before sourcing this script.
-# 2. Define the `log` function to handle logging.
-# 3. Source the `Keychain_InternalCAs.sh` script to get the list of internal CA certificates.
-# 4. Ensure the `cacertdb` and `previousdb` files are correctly populated and accessible.
-# 5. Source this script from the main script (`proxy_cert_auto_setup.sh`) to ensure it runs in the correct context.
-
 local scriptname=$(basename $(realpath $0))
 local current_dir=$(dirname $(realpath $0))
 

@@ -5,11 +5,11 @@ This software is provided by Florian Bidabe. By using this software, you agree t
 
 2. **Commercial Use**: Commercial use of this software is not permitted under this license. Please contact the author for commercial licensing options.
 
-3. **Attribution**: While not required, attribution to Florian Bidabe is appreciated but not mandatory.
+3. **Revocation of Permission**: The author reserves the right to revoke this permission at any time by providing explicit notice. Upon such notice, you must cease all use of the software.
 
-4. **No Warranty**: This software is provided "as is," without warranty of any kind, express or implied, including but not limited to the warranties of merchantability, fitness for a particular purpose, and non-infringement. In no event shall the author be liable for any claim, damages, or other liability, whether in an action of contract, tort, or otherwise, arising from, out of, or in connection with the software or the use or other dealings in the software.
+4. **Attribution**: While not required, attribution to Florian Bidabe is appreciated but not mandatory.
 
-5. **Revocation of Permission**: The author reserves the right to revoke this permission at any time by providing explicit notice. Upon such notice, you must cease all use of the software.
+5. **No Warranty**: This software is provided "as is," without warranty of any kind, express or implied, including but not limited to the warranties of merchantability, fitness for a particular purpose, and non-infringement. In no event shall the author be liable for any claim, damages, or other liability, whether in an action of contract, tort, or otherwise, arising from, out of, or in connection with the software or the use or other dealings in the software.
 
 6. **Derivative Works**: Any modifications or derivative works must:
    - Clearly indicate changes from the original

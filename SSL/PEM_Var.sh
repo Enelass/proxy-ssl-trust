@@ -25,7 +25,7 @@ variables=("REQUESTS_CA_BUNDLE" "SSL_CERT_FILE")
 extravarfile="$current_dir/ssl_vars.config"
 
 # If not invoked/sourced by another script, we'll set some variable for standalone use otherwise this would be ineritated by the source script along with $teefile...
-if [[ -z ${BLUEW-} ]]; then source "$current_dir/../stderr_stdout_syntax.sh"; fi
+if [[ -z ${BLUEW-} ]]; then source "$current_dir/../lib/stderr_stdout_syntax.sh"; fi
 if [[ -z "${invoked-}" ]]; then 
     echo -e "\n\nSummary: The purpose of this script is to provide various CLI on MacOS with environment variables referencing a custom PEM certificate store including public and internal Root
          certificate authorities. This will resolve number of connectivity issues where CLI not relying on the MacOS Keychain Access can still trust internally
@@ -79,7 +79,7 @@ extravar(){
 
 uninstall(){
 	if [[ -z ${overwrite-} ]]; then logI "    Requesting uninstallation" ; fi
-	source "$current_dir/../user_config.sh"
+	source "$current_dir/../lib/user_config.sh"
 	pattern='.config\/cacert\/cacert.pem'
 	for var in "${variables[@]}"; do unset "$var"; done # Loop through the array and unset custom Certificate Store variable for various clients
 	if [[ -f "$CONFIG_FILE" ]]; then 
@@ -171,7 +171,7 @@ shell_var(){
 
 # Download the latest cacert.pem from curl.se (It contains an updated list of Public Root CAs)
 cacert_download() {
-	if [[ -z ${HOME_DIR-} ]]; then source "$current_dir/../user_config.sh"; fi
+	if [[ -z ${HOME_DIR-} ]]; then source "$current_dir/../lib/user_config.sh"; fi
 	customcacert="$HOME_DIR/.config/cacert/cacert.pem"
 	logI " Downloading and/or locating custom PEM certificate" 
 	# Create the directory for storing cacert.pem unless existing
@@ -221,7 +221,7 @@ logI "        ${PINK}     This script will download a public Certificate Store a
 logI "        ${PINK}     It will then create environment variable in the user shell config and reference it...${NC}"
 
 
-source "$current_dir/../user_config.sh" --quiet	# Let's identify the logged-in user, it's home directory, it's default Shell interpreter and associated config file...
+source "$current_dir/../lib/user_config.sh" --quiet	# Let's identify the logged-in user, it's home directory, it's default Shell interpreter and associated config file...
 cacert_download	# Let's download cacert.pem 
 
 # Check if the certificate authority file is valid
