@@ -33,6 +33,7 @@ quiet() {
 
 # Function to add back stdout and stderr
 unquiet() {
+    unset quiet
     exec 1>&3 2>&4
     exec 3>&- 4>&-
 }
