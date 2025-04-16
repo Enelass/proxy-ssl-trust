@@ -6,8 +6,11 @@ local scriptname=$(basename $(realpath $0))
 local current_dir=$(dirname $(realpath $0))
 if [[ -z ${BLUEW-} ]]; then source "$current_dir/../lib/stderr_stdout_syntax.sh"; fi
 # You can manually set your the PAC file URL if running this script in standalone mode.
+
 # If invoked by other scripts, the PAC_FILE_URL will be overwritten by the one found in the system (interfaces or from cutill)...
-PAC_FILE_URL="http://example.com/proxy.pac"
+#PAC_FILE_URL="http://internal.ltd.org/proxy.pac"
+PAC_FILE_URL=""
+
 if [[ -n $pac_url ]]; then PAC_FILE_URL="$pac_url"; fi
 pac_file="/tmp/proxy.pac"                 # Temporary path to store the downloaded PAC file
 local testurl="https://www.google.com"    # URL for performing connectivity tests
@@ -21,8 +24,9 @@ download_pac_file() {
     while [[ $attempt -lt $retries ]]; do
         attempt=$((attempt + 1))
         logI "Downloading PAC file (Attempt $attempt of $retries) from $PAC_FILE_URL..."
-        curl -lo "$pac_file" "$PAC_FILE_URL" >/dev/null 2>&1
-        if [[ $? -eq 0 ]]; then
+        http_status=$(curl -I --silent --output /dev/null --write-out '%{http_code}' "$PAC_FILE_URL")
+        if [[ "$http_status" -le 200 ]]; then
+            curl -sLko "$pac_file" --write-out '%{http_code}' "$PAC_FILE_URL" >/dev/null 2>&1
             logS "  PAC file downloaded successfully in ${BLUEW}$pac_file${NC}"
             success=true
             break
@@ -63,6 +67,14 @@ echo; logI "  ---   ${PINK}SCRIPT: $script_dir/$scriptname${NC}   ---"
 logI "        ${PINK}     This script is meant to parse a PAC File and extract a working proxy address and port${NC}"
 
 # Download the PAC file silently
+URL_regex='^https?://[a-zA-Z0-9.-]+(/[a-zA-Z0-9()@:%_\+.~#?&//=]*)?$'
+while ! [[ "$PAC_FILE_URL" =~ $URL_regex ]]; do
+  logI "Please enter a valid PAC file URL: "
+  read PAC_FILE_URL
+  if ! [[ "$PAC_FILE_URL" =~ $URL_regex ]]; then
+    logE "Invalid URL. Please do better..."
+  fi
+done
 download_pac_file
 
 # Extract proxies and process each one using while read loop
@@ -75,7 +87,7 @@ if [[ -f $pac_file ]]; then
             break
         fi
     done
-    if [[ -z $workingproxy ]]; then # If we haven't found a proxy from the PAC, let's try again with a more permissive timeout, we really need a proxy...
+    if [[ -z $workingproxy ]]; then # If we haven't found a proxy from the PAC, let's try again with a more permissive timeout, we really need to find a working proxy...
         timeout=15
         grep -Eo 'PROXY [^;"]+' "$pac_file" | sort | uniq | awk '{print $2}' |  while read -r proxy; do
             test_proxy_connection "$proxy"
@@ -86,4 +98,10 @@ if [[ -f $pac_file ]]; then
     fi 
 else
     logW "couldn't find the PAC file..."
+fi
+
+if [[ -z $workingproxy ]]; then 
+    logW "We couldn't find a working proxy from the PAC File"
+    logI "    We have found a PAC file, but without reachable proxy, there is no point making use of it..."
+    logE "    Please troubleshoot connectivity issues manually! Aborting..."
 fi
