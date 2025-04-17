@@ -88,6 +88,12 @@ conn_checks(){
   fi
 }
 
+# Function to exit gracefully if running standalone
+exit_if_standalone () {
+  #If this script is running standalone, let's stop here...
+  if [[ -z ${invoked-} ]]; then exit 0; fi
+}
+
 ################################ RUNTIME #############################
 
 unset {ALL,all,HTTP,http,HTTPS,https}_proxy  # We need to start clean... no proxy settings!
@@ -98,24 +104,25 @@ logI "Proxy environment variables have been unset."
 
 # Execute the function to check webconnectivity
 webconn_checks
-
 # If we couldn't establish web connections against two websites, let's check basic network requirements and look for proxy settings
 if [[ $fail_count -ge 2 ]]; then
   logI "We couldn't connect directly to some websites, so we probably behind a proxy..."
+  exit_if_standalone  # Exit only if standalone exec, otherwise moving on...
+  
   logI "Performing additional diagnostics. Let's inspect the NICs..."
   conn_checks
-
   if [[ -n "$workingproxy" ]]; then
     logI "Good news, we have found a pac file and a working proxy, let's install Alpaca to make use of it..."
     source "$current_dir/AlpacaSetup.sh"
   else
     logW "We haven't found any working proxy from the PAC file, either they're all down, or we were too aggressive on the timing"
-    logE "Please increase timeout variable in pac_proxy_extract.sh and try again..." 
+    logE "Please increase timeout variable in pac_proxy_extract.sh and try again..."
   fi
 
 else
   logI "We were able to connect directly to most websites, we are probably not be behind a proxy..."
   logI "If you believe this is wrong, please add some known proxied websites to ./websites.config"
+  exit_if_standalone  # Exit only if standalone exec, otherwise moving on...
   logI "We will now test web requests and whether these are SSL intercepted or not..."
   source "$current_dir/connect_ssl.sh"
 fi

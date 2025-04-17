@@ -88,7 +88,7 @@ The following command will download the suite of tools to `~/Applications/proxy-
 
 ## Logging
 
-Log files are created in `/tmp` directory with the name `Proxy_SSL_Trust.log`. Ensure you have the necessary permissions to write logs in `/tmp`.
+Log files are created in `/tmp` directory with the name `Proxy_SSL_Trust.log`.
 
 ## Contact
 

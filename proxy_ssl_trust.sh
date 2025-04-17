@@ -26,7 +26,7 @@ local AppName="Proxy_SSL_Trust"
 local version="1.7"
 script_dir=$(dirname $(realpath $0))
 teefile="/tmp/$AppName.log"
-invoked=true	# To instruct other scripts that we sourced them... 
+invoked=true	# Set this variable to instruct other scripts that we've invoked them if the variable is set
 if [[ -z ${BLUEW-} ]]; then 
     source "$script_dir/lib/play.sh"
     source "$script_dir/lib/stderr_stdout_syntax.sh"
@@ -35,8 +35,6 @@ fi
 
 # Display the Help Menu
 help() {
-  script="$1"
-  clear
 	echo -e "Summary: This script is designed to manage and patch certificate stores on macOS systems.\nIt's primary function is to ensure that clients trust internal Certificate Authorities.\n"
 	echo -e "Author: florian@photonsec.com.au\t\tgithub.com/Enelass\nRuntime: currently running as $(whoami)\nVersion: $version\n"
 	echo -e "Usage: $script [OPTION]..."
@@ -44,14 +42,18 @@ help() {
   echo -e "  --version\t\tShow the version information"
 	echo -e "  --list, -l\t\tList all the signing Root CAs from the MacOS Keychain Access, This is usefull if you want to check what Root CAs
 	\t\tare supplied with the SOE, or what Root CAs are performing SSL Inspection"
-	echo -e "  --scan, -s\t\tOnly scan for PEM Certificate Stores on the system. I will not patch it!\n\t\t\tThis can be useful if you're looking for a software certificate store but do not know where to find it"
 	echo -e "  --var_uninstall\tRevert any changes made by --var, restoring to the original state"
 	echo -e "  --var\t\t\tSet default shell environement variable to a known PEM Certificate Store containing internal and Public Root CA...
 	\t\tThis is usefull if you need an easy fix for common CLI and within the user-context only..."
+	echo -e "  --proxy_uninstall\tRevert any changes made by --proxy, restoring to the original state"
+	echo -e "  --proxy\t\t${PURPLE}Default Mode${NC}, it tests various proxy addresses it finds in the pac file (if any), then install Alpaca to make use of it...
+	\t\tOnce the proxy setup is complete, it proceeds to solving SSL Trust issues if SSL forward inspection or signing is in place."
+	echo -e "  --scan_uninstall\tRevert any changes made by --scan, restoring to the original state"
+	echo -e "  --scan, -s\t\tOnly scan for PEM Certificate Stores on the system. I will not patch it!
+	\t\tThis is be useful if you're looking for a software certificate store but do not know where to find it"
 	echo -e "  --patch_uninstall\tRevert any changes made by --patch, restoring to the original state"
-	echo -e "  --patch, -p\t\t(For Testing Only) Patch known PEM Certificate Stores (requires --scan) unless excluded...
+	echo -e "  --patch\t\t(For Testing Only) Patch known PEM Certificate Stores (requires --scan) unless excluded...
 	\t\tThis is usefull if you want to patch known certificate stores previously scanned (not recommended)..."
-	echo -e "  By default, if no switches are specified, it will run in both User and System contexts if the user is priviledged, or user context only if unprivileged...\n  It will only look for PEM Files (certicate stores used by various clients, e.g. AWSCli, AzureCLI, Python, etc...)"
 	exit 0
 }
 
@@ -105,7 +107,7 @@ proxy() {
 	proxy=1 #pempatch=1 will invoke Keychain_InternalCAs.sh so no need to set KAlist=1 as it'd be redundant...
 }
 
-# Switch to patch-only known (previously scanned) pem files / Quick mode
+# Switch to revert all changed made by --proxy
 proxy_uninstall() {
 	switch="Proxy and PAC uninstallation"
 	proxy_uninstall=1
@@ -140,18 +142,16 @@ attempt_install() {
 
 ###########################   Script SWITCHES   ###########################
 # Switches and Executions for the initial call (regardless of when)
-if [[ $# -gt 1 ]]; then
-  echo "Error: too many arguments. Please supply only one argument or none..." >&2; exit 1
-fi
-if [[ $# -eq 0 ]]; then
-  # No switches were supplied, exit normally
-  default
-fi
+if [[ $# -gt 1 ]]; then echo "${RED}Error:${NC} too many arguments. Please supply only one argument or none..." >&2; exit 1; fi
+
+# No switches were supplied, run the default mode --proxy
+if [[ $# -eq 0 ]]; then clear; proxy; fi
+
 while [[ $# -gt 0 ]]; do
   case $1 in
-  	--version|-v) echo "$0 version: $version"; exit 0 ;;
-    --help|-h) help ;;
-    --list) list ;;
+  	--version) echo "$0 version: $version"; exit 0 ;;
+    --help|-h) clear; help ;;
+    --list|-l) list ;;
 		--var) var ;;
 		--var_uninstall) var_uninstall ;;
     --scan) scan ;;
@@ -160,7 +160,7 @@ while [[ $# -gt 0 ]]; do
     --patch_uninstall) patch_uninstall ;;
 		--proxy) proxy ;;
 		--proxy) proxy_uninstall ;;
-    *) echo "Error: unknown option '$1'" >&2; exit 1 ;;
+    *) echo "${RED}Error:${NC} unknown option '$1'" >&2; exit 1 ;;
   esac
   shift
 done
@@ -168,8 +168,11 @@ done
 
 ##################################### Runtime ######################################
 
+# Traps to kill subshells processes when this main script terminates (whether gracefully or not)
 trap 'stop_spinner_sigint; play_sigint > /dev/null 2>&1' SIGINT
 trap 'stop_spinner; play_exit > /dev/null 2>&1' EXIT
+
+# A bit of music never harms...
 play
 
 clear

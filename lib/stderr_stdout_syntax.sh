@@ -156,7 +156,7 @@ function stop_spinner() {
 }
 
 
-#Example with actual work
+# Example with actual work
 # function do_long_task() {
 #     start_spinner "Please wait..."
 #     # Your long running task here

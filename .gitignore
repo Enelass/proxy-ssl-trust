@@ -1,5 +1,9 @@
 # .gitignore
 
+# Custom
+dontsync.*
+dontsync/
+
 # Secret files and sensitive data
 *.pem
 *.key
@@ -10,7 +14,7 @@
 *.pfx
 *.jks
 *.p8
-*.webloc
+
 
 # macOS system files
 .DS_Store
