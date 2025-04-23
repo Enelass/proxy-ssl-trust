@@ -38,7 +38,7 @@ get_proxy_settings() {
 }
 
 ###################################### RUNTIME ##########################################
-echo; logI "  ---   ${PINK}SCRIPT: $script_dir/$scriptname${NC}   ---"
+echo; logI "  ---   ${PINK}SCRIPT: $current_dir/$scriptname${NC}   ---"
 logI "        ${PINK}     This script is intended to verify network connectivity and whether a PAC file can be found${NC}"
 
 # Fetch all network services, excluding the first line

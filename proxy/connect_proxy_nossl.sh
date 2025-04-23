@@ -2,7 +2,7 @@
 local scriptname=$(basename $(realpath $0))
 local current_dir=$(dirname $(realpath $0))
 if [[ -z ${teefile-} ]]; then source "$current_dir/../lib/stderr_stdout_syntax.sh"; fi
-CUSTOM_PAC_URL="http://pac.internal.com/org.pac"
+# CUSTOM_PAC_URL="http://pac.internal.com/org.pac"
 if [[ -n $pac_url ]]; then CUSTOM_PAC_URL="$pac_url" ; fi
 
 ################################ VARIABLES #############################
@@ -67,14 +67,23 @@ reload_alpaca_daemon() {
   stop_spinner
 }
 
+# Function to exit gracefully if running standalone
+exit_if_standalone () {
+  #If this script is running standalone, let's stop here...
+  if [[ -z ${invoked_by_alpaca-} ]]; then exit 0; fi
+}
+
 ################################ RUNTIME #############################
 
-echo; logI "  ---   ${PINK}SCRIPT: $script_dir/$scriptname${NC}   ---"
+echo; logI "  ---   ${PINK}SCRIPT: $current_dir/$scriptname${NC}   ---"
 logI "        ${PINK}     It is intended to check if connection can be established over the local proxy Alpaca${NC}"
 
-export {ALL,all,HTTP,http,HTTPS,https}_proxy="http://localhost:3128"
+if [[ -z ${HTTPS_PROXY-} || -z ${https_proxy-} ]]; then
+  logW "Proxy settings were not set..."
+fi
 
-logI "The following proxy variables are currently set:"
+export {ALL,all,HTTP,http,HTTPS,https}_proxy="http://localhost:3128"
+logI "The following proxy variables have been set:"
 logI "    ${GREENW}http_proxy${NC}  is set to \"$http_proxy\"" 
 logI "    ${GREENW}https_proxy${NC} is set to \"$https_proxy\""
 
@@ -85,17 +94,20 @@ webconn_checks
 # Test if we could connect or not...
 if [[ -n $proxy_not_working ]]; then
       logW "    It looks like the proxy fails establishing connections..."
+      exit_if_standalone 
       # Since Alpaca is running as a user daemon, let's inspect its LaunchAgent config, maybe it's missing the PAC URL...
-      if [[ -f "$AlpacaDaemon_path" ]]; then
+      if [[ -f "$AlpacaDaemon_path" && -n $CUSTOM_PAC_URL ]]; then
           logI "      Let's inspect the config file in "$AlpacaDaemon_path"..."
           logI "      We're looking for $CUSTOM_PAC_URL entry..."
           if cat "$AlpacaDaemon_path" | grep -q "$CUSTOM_PAC_URL"; then
-            if cat "$AlpacaDaemon_path" | grep -q '<string>-C</string>'; then
-              logI "      PAC URL is already specified in the file!..."
+              logI "      PAC URL is already specified in the file!"
               logW "      Alpaca should work but isn't..."
               logE "Please uninstall and reinstall: ${BLUEW}./AlpacaSetup --uninstall${NC}"
-            fi
           else
+            if cat "$AlpacaDaemon_path" | grep -q '<string>-C</string>'; then
+              logI "      Another PAC URL appears to be specified in the file!"
+              logE "Please uninstall and reinstall to create this bad entry in the daemon: ${BLUEW}./AlpacaSetup --uninstall${NC}"
+            else
               logW "      PAC URL is not specified in the file! Let's add it and test again..."
               sed -i '' '/<key>ProgramArguments<\/key>/,/<\/array>/ {
     /<string>[^<]*<\/string>/a\
@@ -105,6 +117,7 @@ if [[ -n $proxy_not_working ]]; then
               reload_alpaca_daemon
               # Check AGAIN if HTTPS requests are getting throught...
               webconn_checks
+            fi
           fi
       else
           logE "Please troubleshooting Alpaca proxy manually or uninstall it..."

@@ -63,7 +63,7 @@ test_proxy_connection() {
 
 ##################################### Runtime ######################################
 
-echo; logI "  ---   ${PINK}SCRIPT: $script_dir/$scriptname${NC}   ---"
+echo; logI "  ---   ${PINK}SCRIPT: $current_dir/$scriptname${NC}   ---"
 logI "        ${PINK}     This script is meant to parse a PAC File and extract a working proxy address and port${NC}"
 
 # Download the PAC file silently

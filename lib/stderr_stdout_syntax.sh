@@ -52,37 +52,53 @@ timestamp() {
     date "+%Y-%m-%d %H:%M:%S" 
 }
 
+privacy_treatment() {
+    local message="$1"
+    
+    # Value we do not want to display... - Uncomment to enable
+    #local privacy_values=("internaldomain.tld" "sensitivevalue" "domainname" "username" "etc...")
+    for value in "${privacy_values[@]}"; do
+        message="${message//${value}/<REDACTED>}"
+    done
+
+    # Replace IP addresses, except for 127.0.0.1 - Uncomment to enable
+    message=$(echo "$message" | sed -E 's/([0-9]{1,3}\.){3}[0-9]{1,3}/<REDACTED>/g' | sed 's/<REDACTED> 127.0.0.1/127.0.0.1/g')
+
+
+    echo "$message"
+}
+
 logonly() { 
     local message="$1"
     echo "$(timestamp) $message" >> "$teefile" 
 }
 
 log() { 
-	local message="$1"
+	local message="$(privacy_treatment "$1")"
     echo "$(timestamp) $message" | sed "s/\x1b\[[0-9;]*m//g" >> "$teefile"
     echo "$(timestamp) $message"
 }
 
 logI() { 
-    local message="$1"
+    local message="$(privacy_treatment "$1")"
     echo "$(timestamp) Info    - $message" | sed "s/\x1b\[[0-9;]*m//g" >> "$teefile"
     echo "$(timestamp) Info    - $message"
 }
 
 logW() { 
-    local message="$1"
+    local message="$(privacy_treatment "$1")"
     echo "$(timestamp) ${ORANGE}Warning${NC} - $message" | sed "s/\x1b\[[0-9;]*m//g" >> "$teefile"
     echo "$(timestamp) ${ORANGE}Warning${NC} - $message"
 }
 
 logS() { 
-    local message="$1"
+    local message="$(privacy_treatment "$1")"
     echo "$(timestamp) ${GREEN}Success${NC} - $message" | sed "s/\x1b\[[0-9;]*m//g" >> "$teefile"
     echo "$(timestamp) ${GREEN}Success${NC} - $message"
 }
 
 logE() { 
-    local message="$1"
+    local message="$(privacy_treatment "$1")"
     echo "$(timestamp) ${RED}Error${NC}   - $message" | sed "s/\x1b\[[0-9;]*m//g" >> "$teefile"
     echo "$(timestamp) ${RED}Error${NC}   - $message"
     exit 1

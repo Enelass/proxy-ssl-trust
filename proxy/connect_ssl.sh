@@ -62,7 +62,7 @@ check_website_withSSL() {
 for var in "${variables[@]}"; do unset "$var"; done # Loop through the array and unset custom Certificate Store variable for various clients
 
 # Execute the function to check web connectivity without SSL verification
-echo; logI "  ---   ${PINK}SCRIPT: $script_dir/$scriptname${NC}   ---"
+echo; logI "  ---   ${PINK}SCRIPT: $current_dir/$scriptname${NC}   ---"
 logI "        ${PINK}     This script is intended to check whether HTTPS requests are intercepted or not...${NC}"
 
 # If we couldn't establish web connections, let's stop there since we have either proxy or internet connectivity issues...

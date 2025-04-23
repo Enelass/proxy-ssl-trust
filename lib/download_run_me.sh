@@ -17,4 +17,6 @@ unzip -q -o main.zip
 rm main.zip
 mv proxy-ssl-trust-main proxy-ssl-trust
 cd proxy-ssl-trust
-source ./proxy_ssl_trust.sh --proxy
+if [[ -z $1 ]]; then
+	source ./proxy_ssl_trust.sh --proxy
+fi

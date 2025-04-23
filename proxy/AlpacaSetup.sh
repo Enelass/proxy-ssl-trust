@@ -39,6 +39,12 @@ if [[ -z "${teefile-}" ]]; then
 fi
 
 ############################## Defining functions ##################################
+# Function to exit gracefully if running standalone
+exit_if_standalone () {
+  # If this script is running standalone, let's stop here...
+  if [[ -z ${invoked-} ]]; then exit 0; fi
+}
+
 uninstall() {
 	if [[ -n $uninst ]]; then log "Info    - Uninstall switch was called"; fi
 	log "Info    -    Let's delete the Alpaca binaries, settings and env var ..."
@@ -356,7 +362,11 @@ shell_var
 
 # Now that all requirements are met, we'll test the connectivity or revert the changes made by this script...
 logI "${GREEN}   Connect - ${NC}We will now run some connectivity tests..."
+invoked_by_alpaca=true
 source "$current_dir/connect_proxy_nossl.sh"
+
+# Function to exit gracefully if running standalone
+exit_if_standalone
 
 # The local proxy is installed and running, we'll now test connectivity and see whether or not the connection is SSL intercepted
 logI "       We will now test web requests and whether these are SSL intercepted or not..."

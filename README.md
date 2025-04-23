@@ -2,22 +2,12 @@
 
 ## Description
 
-The purpose of this suite of scripts is to fix certificate trust issues where clients (CLI mostly but also a few GUIs) fail to connect as they do not trust Internal Certificate Authorities found in KeychainAccess. This script invokes other scripts to detect proxy settings and create persistent connectivity for CLI. It also supports a variety of switches for advanced troubleshooting.
+The purpose of this suite of scripts for macOS is to resolve certificate trust issues where clients fail to connect due to not trusting Internal Certificate Authorities from the Keychain Access. This script invokes additional scripts to detect proxy settings, PAC files, and SSL material to permanently fix connectivity issues for all CLI. It supports a variety of switches for advanced troubleshooting. Below is a list of capabilities and practical examples.
 
-## Author
-
-- Florian Bidabe  /  photonsec.com.au
-## Version
-
-- **Current Version**: 1.7
-- **Initial Release Date**: 19-Sep-2024
-- **Last Release Date**: 30-Mar-2025
-
-## Usage
-
-This script is designed for macOS systems and requires `Homebrew` to function.
-Various switches have been provided to perform specific tasks.
-
+## Requirements
+- MacOS with Zsh shell (tested on MacOS 15)
+- Homebrew Package Manager
+- Bundled Shell scripts from the lib folders
 
 ### Getting Started
 The following command will download the suite of tools to `~/Applications/proxy-ssl-trust`. It will then execute the default option, equivalent to running `./Proxy_SSL_Trust.sh --proxy`, which configures macOS CLI to use a proxy and PAC file, and addresses SSL trust issues.
@@ -42,8 +32,21 @@ The following command will download the suite of tools to `~/Applications/proxy-
 - `--var_uninstall`: Revert any changes made by `--var`, restoring the original state.
 - `--patch, -p`: Patch known PEM Certificate Stores (requires `--scan`). Useful for patching known certificate stores (not recommended).
 - `--patch_uninstall`: Revert any changes made by `--patch`, restoring the original state.
-- `--proxy`: Set up proxy and PAC file & install Alpaca as a daemon.
+- `--proxy`: Set up proxy and PAC file & install Alpaca as a daemon (DEFAULT).
 - `--proxy_uninstall`: Uninstall proxy and PAC settings.
+
+![proxy_ssl_trust.png](assets/proxy_ssl_trust.png)
+
+### Workflows
+
+## --proxy (High Level)
+![proxy_ssltrust_high-level.svg](assets/proxy_ssltrust_high-level.svg)
+
+## --proxy (Detailed Design)
+![proxy_ssltrust_detailed-design.svg](assets/proxy_ssltrust_detailed-design.svg)
+
+## Standalone Components 
+![proxy_ssltrust_standalone-components.svg](assets/proxy_ssltrust_standalone-components.svg)
 
 ### Examples
 
@@ -90,7 +93,15 @@ The following command will download the suite of tools to `~/Applications/proxy-
 
 Log files are created in `/tmp` directory with the name `Proxy_SSL_Trust.log`.
 
+## Version
+
+- **Current Version**: 1.7
+- **Initial Release Date**: 19-Sep-2024
+- **Last Release Date**: 30-Mar-2025
+
 ## Contact
+
+Florian Bidabe  /  photonsec.com.au
 
 For any issues or support, you can reach out to the author at florian@photonsec.com.au.
 

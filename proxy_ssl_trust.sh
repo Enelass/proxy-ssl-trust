@@ -172,7 +172,7 @@ done
 trap 'stop_spinner_sigint; play_sigint > /dev/null 2>&1' SIGINT
 trap 'stop_spinner; play_exit > /dev/null 2>&1' EXIT
 
-# A bit of music never harms...
+# A bit of music never hurts...
 play
 
 clear
@@ -237,10 +237,6 @@ fi
 ######################  PATCHING PEM Certificate Stores ##############################
 if [[ ${pempatch} -eq 1 ]]; then source "$script_dir/SSL/PEM_Patcher.sh"; exit; fi
 if [[ ${patch_uninstall} -eq 1 ]]; then source "$script_dir/SSL/PEM_Patcher.sh" --uninstall; exit; fi
-
-
-
-
 
 # Truncate Log file to insure it isn't ever growing. Capped at 10,000 lines of codes
 tail -n 10000 "$teefile" > "${teefile}.tmp" && mv "${teefile}.tmp" "$teefile"

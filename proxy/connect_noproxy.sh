@@ -98,7 +98,7 @@ exit_if_standalone () {
 
 unset {ALL,all,HTTP,http,HTTPS,https}_proxy  # We need to start clean... no proxy settings!
 
-echo; logI "  ---   ${PINK}SCRIPT: $script_dir/$scriptname${NC}   ---"
+echo; logI "  ---   ${PINK}SCRIPT: $current_dir/$scriptname${NC}   ---"
 logI "        ${PINK}     It is intended to check if connection can be established without proxy${NC}"
 logI "Proxy environment variables have been unset."
 
