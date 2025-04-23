@@ -2,25 +2,27 @@
 
 #################### Written by Florian Bidabe #####################################
 #                                                                                  #
-#  DESCRIPTION: The purpose of this script is to extract a list of internal root   #
-#               certificate authorities form the Keychain Manager in MacOS         #
+#  DESCRIPTION: The purpose of this script is to extract a list of internal        #
+#               certificate authorities form the Keychain Access in MacOS          #
 #               To do so, it excludes the certificates found in the Keychain       #
-#               manager if there are Intermediate Authorities, Certificates or     #
-#               are not signing CAs. It only retain Root and signing CAs and build #
-#               a list of it. Each Root CA certificate can then be added to        #
-#               certificate stores (e.g. PEM Files) for various clients that are   #
-#               not using the MacOS system certificate store (Keychain Manager).   #
+#               Access if there are Intermediate Authorities, Certificates or      #
+#               are not signing CAs. It only retain trusted signing CAs and build  #
+#               a list of it. Each CA certificate can then be added to certificate #
+#               stores (e.g. PEM Files) for various clients that are not using the #
+#               MacOS system certificate store (Keychain Access).                  #
 #  INITIAL RELEASE DATE: 19-Sep-2024                                               #
 #  AUTHOR: Florian Bidabe                                                          #
-#  LAST RELEASE DATE: 01-Apr-2025                                                  #
-#  VERSION: 0.3                                                                    #
-#  REVISION: Syntax & Logging improvement +  addition of Intermediate CAs scanning #
+#  LAST RELEASE DATE: 23-Apr-2025                                                  #
+#  VERSION: 0.5                                                                    #
+#  REVISION: Syntax & Logging improvement                                          #
+#            Addition of Intermediate CAs scanning                                 #
+#            Added the is_trusted function (critical from a security standpoint)   #
 #                                                                                  #
 #                                                                                  #
 ####################################################################################
 
 ################################# Variables ########################################
-version=0.3
+version=0.5
 local scriptname=$(basename $(realpath $0))
 local current_dir=$(dirname $(realpath $0))
 if [[ -z "${teefile-}" ]]; then AppName="KeychainInternalCAs"; teefile="/tmp/$AppName.log"; fi
@@ -30,8 +32,8 @@ if [[ -z ${logI-} ]]; then source "$current_dir/../lib/stderr_stdout_syntax.sh";
 # Function to display the Help Menu
 help() {
     clear
-    echo -e "Summary: The purpose of this script is to extract a list of internal root certificate authorities form the Keychain Manager in MacOS
-         To do so, it excludes the certificates found in the Keychain manager if there are Intermediate Authorities, Certificates or are not signing CAs.
+    echo -e "Summary: The purpose of this script is to extract a list of internal root certificate authorities form the Keychain Access in MacOS
+         To do so, it excludes the certificates found in the Keychain Access if there are Intermediate Authorities, Certificates or are not signing CAs.
          It only retain signing CAs and build a list of it. Each CA can then be added to certificate stores (e.g. PEM Files) for various clients that are...\n         not using the MacOS system certificate store (Keychain Access)."
     echo -e "Author:  florian@photonsec.com.au\t\tgithub.com/Enelass\nRuntime: currently running as $(whoami)\nVervion: $version\n"
     echo -e "Usage: $@ [OPTION]..."
@@ -56,17 +58,47 @@ is_signing_ca () {
     if [[ "$basic_constraints" == *"CA:TRUE"* ]]; then
         # Check if Certificate Sign is present in Key Usage
         if [[ "$key_usage" == *"Certificate Sign"* ]]; then
-            logS "    It has X509v3 Basic Constraints set to CA:TRUE and Key Usage set to Certificate Sign. It is a \"signing\" CA"
+            logI "    It has X509v3 Basic Constraints set to CA:TRUE and Key Usage set to Certificate Sign. It is a signing CA"
             return 0
         else
-            logI "    It has X509v3 Basic Constraints set to CA:TRUE but Key Usage is \"not\" set to Certificate Sign. It isn't a signing CA"
+            logW "    X509v3 Basic Constraints is set to CA:TRUE but Key Usage is ${RED}not${NC} set to Certificate Sign. Skipping it..."
             return 1
         fi
     else
-        logI "    It does not have X509v3 Basic Constraints set to CA:TRUE, hence it isn't a Certificate Authority"
+        logW "    It does not have X509v3 Basic Constraints set to CA:TRUE, hence it isn't a Certificate Authority. Skipping it..."
         return 1
     fi
 }
+
+
+# Function to check if a certificate chain is trusted or not (implicit for public, explicit for private) and still valid (not expired)
+is_trusted () {
+    local issuer_name="$1"
+    tmpcrt="/tmp/.tempcert.pem"
+    security find-certificate -c "$issuer_name" -p > "$tmpcrt"
+    if [[ $? -eq 0 ]]; then
+        if [[ -f "$tmpcrt" ]]; then
+            # Certificate was exported to temp location, let's now check it
+            crtstatus=$(security verify-cert -c "$tmpcrt" 2>&1); exit_status=$?
+            crtstatus=$(echo $crtstatus | xargs)
+            if [[ $exit_status -eq 0 ]]; then
+                logI "    This CA is ${GREEN}trusted${NC} by MacOS!"
+                logS "    We have found an internal trusted signing CA! Adding it to the list of internal CAs..."
+                return 0
+            else
+                logI "    This CA is ${RED}not trusted${NC} by MacOS: $crtstatus"
+                logW "    We have found an internal signing CA but it is untrusted! Skipping it..."
+                return 1
+            fi
+        fi
+    else
+        # Certificate could not be exported, skipping this entry
+        logW "    Certificate trust could not be verified..."
+        return 1
+    fi
+    rm /tmp/.tempcert.pem >/dev/null 2>&1
+}
+
 
 # Function to verify whether the CA is public or internal
 is_internal () {
@@ -80,7 +112,7 @@ is_internal () {
         if [[ $? -ne 0 ]]; then
             # We don't have have a Base 64 for this Base 64 CA issuer, let's lookup the name as last resort...
             if $(cat "/private/etc/ssl/cert.pem" | grep -q "$issuer_name"); then
-                logW "    This is public! skipping this one..."
+                logW "    This is public! Skipping it..."
                 return 1
             else
                 logI "    This is not public, or it's expired (no longer in public certificate stores)..."
@@ -88,7 +120,7 @@ is_internal () {
                     logI "    It is internal! We found the issuer in Keychain Access..."
                     return 0
                 else
-                    logI "    It isn't internal either! skipping..."
+                    logW "    It isn't internal either! Skipping it..."
                     return 1
                 fi
             fi
@@ -97,7 +129,7 @@ is_internal () {
                 base64_l3=$(echo "$base64" | awk 'NR == 4') # We only select line 4 as it is less compute intensive and still has a low chance of collision
                 # Let's see if our internal signing CA is, or isn't internal...
                 if $(cat "/private/etc/ssl/cert.pem" | grep -q "$base64_l3"); then
-                    logW "    This is public! skipping this one..."
+                    logW "    This is public! Skipping it..."
                     return 1
                 else
                     logI "    This is not public, so it's by definition internal..."
@@ -128,28 +160,33 @@ keychainCA() {
             logI "    It is not signed by any other certificates, it is either self-signed or is a RootCA"
             if is_signing_ca "$currentcertname"; then
                 if is_internal "$currentcertname"; then
-                    CAList+="$currentcertname"$'\n'
+                    if is_trusted "$currentcertname"; then
+                        CAList+="$currentcertname"$'\n'
+                    fi
                 fi
             fi
         else                                                            # Intermediate of Leaf certificate
-            logI "    It is not a RootCA, it's signed by another issuer then itself. This could be a certificate or Intermediate CA..."
             if [[ -n $intermediate ]]; then # If intermediate was selected, we'll process it too...
-                logI "    It is not signed by any other certificates, it is either self-signed or is a RootCA"
+                logI "    This certificate is issued by another, so it isn't a RootCA. This would be a leaf certificate or Intermediate CA..."
                 if is_signing_ca "$currentcertname"; then
-                    # We need to find the issuer to we can assess whether the issuer is public or not
-                    # Using the intermediate CA name would not work, since intermediate public CA are "not" listed in public Certificate Stores (only the Root CAs are...)
+                    # We need to find the issuer so we can assess whether it is public or not
+                    # Using the intermediate certs would not work, since they aren't found in public Certificate Stores (only the Root CAs are...)
                     # We'll only process "signing intermediate" to save on compute / performance
                     local b64_issuer=$(openssl x509 -in <(security find-certificate -c "$currentcertname" -p) -noout -issuer | awk -F 'CN=' '{print $2}' | awk -F ',' '{print $1}')
                     if [[ -n $b64_issuer ]]; then
                         # We have the issuer's name!
                         if is_internal "$b64_issuer"; then
-                        CAList+="$currentcertname"$'\n'
-                    fi
+                            if is_trusted "$currentcertname"; then
+                                CAList+="$currentcertname"$'\n'
+                            fi
+                        fi
                     else
                         # If we couln't get the issuer's name, let skip this check and carry on...
                         return 0
                     fi
                 fi
+            else
+                logW "    This certificate is issued by another, so it isn't a RootCA. This would be a leaf certificate or Intermediate CA! Skipping it..."
             fi
         fi
     done <<< "$output"
@@ -181,16 +218,17 @@ done
 
 ###############################   RUNTIME   ################################
 
-echo; logI "  ---   ${PINK}SCRIPT: $script_dir/$scriptname${NC}   ---"
+echo; logI "  ---   ${PINK}SCRIPT: $current_dir/$scriptname${NC}   ---"
 logI "        ${PINK}     This script is intended to identify and extract a list of Internal signing Certificate Authorities...${NC}"
 
 # If not invoked/sourced by another script, we'll set some variable for standalone use...
 if [[ -z "${invoked-}" ]]; then 
-    echo -e "Summary: The purpose of this script is to extract a list of internal signing certificate authorities form the Keychain Manager in MacOS"
+    echo -e "Summary: The purpose of this script is to extract a list of internal signing certificate authorities form the Keychain Access in MacOS"
     echo    "         It only retain Root and/or Intermediate signing CAs that are internal and it builds a list of it."
     echo -e "Author:  florian@photonsec.com.au\t\tgithub.com/Enelass\nRuntime: currently running as $(whoami)"
     echo "This script was invoked directly... Setting variable for standalone use..."
 fi
 
+# Execute the function to list all internal certificates and find signing CAs
 keychainCA
 if [[ -n "${silent-}" ]]; then unquiet; fi

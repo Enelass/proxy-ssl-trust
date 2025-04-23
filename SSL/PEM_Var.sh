@@ -216,7 +216,7 @@ done
 
 
 # Execute the function to check web connectivity without SSL verification
-echo; logI "  ---   ${PINK}SCRIPT: $current_dir/$(basename $scriptname)${NC}   ---"
+echo; logI "  ---   ${PINK}SCRIPT: $current_dir/$scriptname${NC}   ---"
 logI "        ${PINK}     This script will download a public Certificate Store and add Internal CAs to it${NC}"
 logI "        ${PINK}     It will then create environment variable in the user shell config and reference it...${NC}"
 

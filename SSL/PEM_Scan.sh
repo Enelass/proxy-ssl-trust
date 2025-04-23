@@ -285,7 +285,7 @@ while [[ $# -gt 0 ]]; do
   shift
 done
 
-echo; logI "  ---   ${PINK}SCRIPT: $script_dir/$scriptname${NC}   ---"
+echo; logI "  ---   ${PINK}SCRIPT: $current_dir/$scriptname${NC}   ---"
 logI "        ${PINK}     The purpose of this script is to find PEM Certificate Store on MacOS System...${NC}"
 
 if [[ "$EUID" -ne 0 && -z $quick ]]; then

@@ -125,7 +125,7 @@ while [[ $# -gt 0 ]]; do
   shift
 done
 
-echo; logI "  ---   ${PINK}SCRIPT: $script_dir/$scriptname${NC}   ---"
+echo; logI "  ---   ${PINK}SCRIPT: $current_dir/$scriptname${NC}   ---"
 logI "        ${PINK}     This script is intended to patch a supplied (by --scan or PEM_Scan.sh) list of PEM Certificate Stores...${NC}"
 
 # We need both a list of MacOS internal Root CAs (see command below) to add to each PEM certificate store we have (cacertdb IF statement below as well)
