@@ -57,6 +57,7 @@ privacy_treatment() {
     
     # Value we do not want to display... - Uncomment to enable
     #local privacy_values=("internaldomain.tld" "sensitivevalue" "domainname" "username" "etc...")
+    local privacy_values=("nothingtosanatise...")
     for value in "${privacy_values[@]}"; do
         message="${message//${value}/<REDACTED>}"
     done
