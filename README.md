@@ -39,6 +39,9 @@ The following command will download the suite of tools to `~/Applications/proxy-
 
 ### Workflows
 
+## Execution
+[![Watch the video](https://img.youtube.com/vi/sAhBpycDMLI/0.jpg)](https://www.youtube.com/watch?v=sAhBpycDMLI)
+
 ## --proxy (High Level)
 ![proxy_ssltrust_high-level.svg](assets/proxy_ssltrust_high-level.svg)
 
