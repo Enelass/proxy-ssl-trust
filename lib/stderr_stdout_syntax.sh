@@ -5,12 +5,10 @@
 # Some due credits, lest we forget: https://www.zdnet.com/article/without-dennis-ritchie-there-would-be-no-jobs/
 if [[ -z ${teefile-} ]]; then teefile="/tmp/tmp.logfile.log"; fi
 
+# To hide specific values from stdout and stderr, custominse and uncomment variable in the privacy_treatment function
 
-# Trap the script termination signals
-# trap 'stop_spinner_sigint; play_signint > /dev/null 2>&1' SIGINT
-# trap 'stop_spinner; play_exit > /dev/null 2>&1' EXIT
 
-# ANSI color codes for stdout status code
+# ANSI color codes for stdout status code, Feel free to add more color variables...
 RED='\033[1;31m'
 GREEN='\033[1;32m'
 ORANGE='\033[38;5;214m'
@@ -21,6 +19,9 @@ PURPLE='\033[0;35m'
 NC='\033[0m' # No Color
 
 
+# The commands below are set to terminate the spinner and play functions 
+#   trap 'stop_spinner_sigint; play_signint > /dev/null 2>&1' SIGINT
+#   trap 'stop_spinner; play_exit > /dev/null 2>&1' EXIT
 
 #___________________________________________________ Output Verbosity ________________________________________________________
 
@@ -53,18 +54,17 @@ timestamp() {
 }
 
 privacy_treatment() {
+  # Value we do not want to display... - Uncomment to enable
+  # local privacy_values=("internaldomain.tld" "sensitivevalue" "domainname" "username" "etc...")
     local message="$1"
-    
-    # Value we do not want to display... - Uncomment to enable
-    #local privacy_values=("internaldomain.tld" "sensitivevalue" "domainname" "username" "etc...")
-    for value in "${privacy_values[@]}"; do
-        message="${message//${value}/<REDACTED>}"
-    done
+    if [[ -n $privacy_values ]]; then
+        for value in "${privacy_values[@]}"; do
+            message="${message//${value}/<REDACTED>}"
+        done
+    fi
 
-    # Replace IP addresses, except for 127.0.0.1 - Uncomment to enable
-    message=$(echo "$message" | sed -E 's/([0-9]{1,3}\.){3}[0-9]{1,3}/<REDACTED>/g' | sed 's/<REDACTED> 127.0.0.1/127.0.0.1/g')
-
-
+  # Replace IP addresses, except for 127.0.0.1 - Uncomment to enable
+  # message=$(echo "$message" | sed -E 's/([0-9]{1,3}\.){3}[0-9]{1,3}/<REDACTED>/g' | sed 's/<REDACTED> 127.0.0.1/127.0.0.1/g')
     echo "$message"
 }
 

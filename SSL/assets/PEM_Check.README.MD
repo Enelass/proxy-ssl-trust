@@ -63,7 +63,6 @@ Failure - Not a PEM File containing Base 64 certificates
 Failure - Valid PEM file but containing corrupted Certificate entries
 ![Failure gif](PEM_Check_Failure.gif)
 
-
 ## Requirements
 
 - The script requires the `openssl` command-line tool to be installed on the system.
