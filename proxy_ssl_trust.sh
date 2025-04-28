@@ -214,7 +214,16 @@ if ! command_exists brew; then logE " Homebrew is not installed. Please install 
 if ! command_exists curl; then logI "cURL is not installed. Installing curl..."; attempt_install curl; else logI "     $(curl -V | head -n 1 | awk '{print $1, $2}') is already installed."; fi
 
 #########################  Proxy and PAC File setup ##############################
-if [[ ${proxy} -eq 1 ]]; then source "$script_dir/proxy/connect_noproxy.sh"; exit; fi
+if [[ ${proxy} -eq 1 ]]; then
+	source "$script_dir/proxy/connect_noproxy.sh"
+	if [[ $? -eq 0 ]]; then
+		# If the script executed without major errors, we'll keep a permanent marker to indicate the setup was successfull
+		echo " Execution completed with status: \"$?\""
+		touch "$script_dir/.proxy_ssl_trust.success"
+		echo "touch $script_dir/.proxy_ssl_trust.success"
+	fi
+	exit
+fi
 if [[ ${proxy_uninstall} -eq 1 ]]; then source "$script_dir/proxy/AlpacaSetup.sh" --uninstall; exit; fi
 
 

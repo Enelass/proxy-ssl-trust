@@ -4,8 +4,8 @@
 #   the path for the user home directory 						(e.g. /Users/homedir)
 #   the path for the user's shell configuration 		(e.g. ~/.zshrc)
 
-local script_dir=$(dirname $(realpath $0))
-if [[ -z ${BLUEW-} ]]; then source "$script_dir/stderr_stdout_syntax.sh"; fi
+local current_dir=$(dirname $(realpath $0))
+if [[ -z ${BLUEW-} ]]; then source "$current_dir/stderr_stdout_syntax.sh"; fi
 
 
 ################################## Functions ###################################
