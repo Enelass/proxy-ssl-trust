@@ -218,9 +218,7 @@ if [[ ${proxy} -eq 1 ]]; then
 	source "$script_dir/proxy/connect_noproxy.sh"
 	if [[ $? -eq 0 ]]; then
 		# If the script executed without major errors, we'll keep a permanent marker to indicate the setup was successfull
-		echo " Execution completed with status: \"$?\""
 		touch "$script_dir/.proxy_ssl_trust.success"
-		echo "touch $script_dir/.proxy_ssl_trust.success"
 	fi
 	exit
 fi
