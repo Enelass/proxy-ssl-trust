@@ -57,11 +57,25 @@ privacy_treatment() {
   # Value we do not want to display... - Uncomment to enable
   # local privacy_values=("internaldomain.tld" "sensitivevalue" "domainname" "username" "etc...")
     local message="$1"
+<<<<<<< HEAD
     if [[ -n $privacy_values ]]; then
         for value in "${privacy_values[@]}"; do
             message="${message//${value}/<REDACTED>}"
         done
     fi
+=======
+    
+    # Value we do not want to display... - Uncomment to enable
+    #local privacy_values=("internaldomain.tld" "sensitivevalue" "domainname" "username" "etc...")
+    local privacy_values=("nothingtosanatise...")
+    for value in "${privacy_values[@]}"; do
+        message="${message//${value}/<REDACTED>}"
+    done
+
+    # Replace IP addresses, except for 127.0.0.1 - Uncomment to enable
+    message=$(echo "$message" | sed -E 's/([0-9]{1,3}\.){3}[0-9]{1,3}/<REDACTED>/g' | sed 's/<REDACTED> 127.0.0.1/127.0.0.1/g')
+
+>>>>>>> 8dca6e54dfacb12f3ec6695d4b71e9a9274ca963
 
   # Replace IP addresses, except for 127.0.0.1 - Uncomment to enable
   # message=$(echo "$message" | sed -E 's/([0-9]{1,3}\.){3}[0-9]{1,3}/<REDACTED>/g' | sed 's/<REDACTED> 127.0.0.1/127.0.0.1/g')

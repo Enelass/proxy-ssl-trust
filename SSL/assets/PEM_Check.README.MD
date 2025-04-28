@@ -54,7 +54,7 @@ The script performs the following tasks:
 
 ## Example Output
 
-Success:
+Success - This certificate store is valid and contains no eroneous Base 64 certificate
 ![Success gif](PEM_Check_Success.gif)
 
 Failure - Not a PEM File containing Base 64 certificates

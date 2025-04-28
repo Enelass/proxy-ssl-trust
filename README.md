@@ -37,16 +37,21 @@ The following command will download the suite of tools to `~/Applications/proxy-
 
 ![proxy_ssl_trust.png](assets/proxy_ssl_trust.png)
 
-### Workflows
+## Workflows
 
-## --proxy (High Level)
+### --proxy (High Level)
 ![proxy_ssltrust_high-level.svg](assets/proxy_ssltrust_high-level.svg)
 
-## --proxy (Detailed Design)
+### --proxy (Detailed Design)
 ![proxy_ssltrust_detailed-design.svg](assets/proxy_ssltrust_detailed-design.svg)
 
-## Standalone Components 
+### Standalone Components 
 ![proxy_ssltrust_standalone-components.svg](assets/proxy_ssltrust_standalone-components.svg)
+
+
+### Runtime video - Watch it in action...
+[![Watch the video](https://img.youtube.com/vi/sAhBpycDMLI/0.jpg)](https://www.youtube.com/watch?v=sAhBpycDMLI)
+
 
 ### Examples
 
