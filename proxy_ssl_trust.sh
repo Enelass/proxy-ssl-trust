@@ -28,7 +28,7 @@ script_dir=$(dirname $(realpath $0))
 teefile="/tmp/$AppName.log"
 invoked=true	# Set this variable to instruct other scripts that we've invoked them if the variable is set
 if [[ -z ${BLUEW-} ]]; then 
-    source "$script_dir/lib/play.sh"
+    # source "$script_dir/lib/play.sh"
     source "$script_dir/lib/stderr_stdout_syntax.sh"
 fi
 ####################################### Defining functions ###########################	
