@@ -108,15 +108,7 @@ Log files are created in `/tmp` directory with the name `Proxy_SSL_Trust.log`.
 
 Florian Bidabe  /  photonsec.com.au
 
-For any issues or support, you can reach out to the author at <span id="email"></span>.
-
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const user = 'contact';
-    const domain = 'photonsec.com.au';
-    document.getElementById('email').innerHTML = '<a href="mailto:' + user + '@' + domain + '">' + user + '@' + domain + '</a>';
-});
-</script>
+For any issues or support, you can reach out to the author at contact [at] photonsec [dot] com [dot] au.
 
 GitHub Repository: [github.com/Enelass](https://github.com/Enelass)
 
