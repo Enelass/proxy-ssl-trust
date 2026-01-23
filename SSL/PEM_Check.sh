@@ -225,9 +225,12 @@ pem_integrity_check(){
 
   # Iterate over each certificate in the array and inspect it using OpenSSL
   local idx=1
-  while (( idx <= cert_count )); do
+  while (( idx <= cert_count && can_continue )); do
     local cert="${certs[idx]}"
     current_cert_index=$idx
+
+    # Check for interrupt before processing this certificate
+    check_interrupted
 
     # Verification of the certificate
 
@@ -258,6 +261,9 @@ pem_integrity_check(){
     fi
     # echo "$current_cert_index )   $certCN"
     if [[ ${verbose:-0} -eq 1 ]]; then cert_CNs+="$current_cert_index) $certCN\n"; fi
+    
+    # Check for interrupt before showing progress bar
+    check_interrupted
     show_progress_bar $current_cert_index $cert_count
     current_cert_index=$((current_cert_index + 1))
     idx=$((idx + 1))

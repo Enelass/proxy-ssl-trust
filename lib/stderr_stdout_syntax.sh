@@ -19,6 +19,10 @@ PURPLE='\033[0;35m'
 NC='\033[0m' # No Color
 
 
+# Global interrupt handling variables
+interrupted=0
+interrupt_handling_setup=false
+
 # The commands below are set to terminate the spinner and play functions 
 #   trap 'stop_spinner_sigint; play_signint > /dev/null 2>&1' SIGINT
 #   trap 'stop_spinner; play_exit > /dev/null 2>&1' EXIT
@@ -148,15 +152,44 @@ function start_spinner() {
     SPINNER_PID=$!
 }
 
-# Function to stop the spinner
+# Function to detect if script is sourced vs executed
+is_sourced() {
+    if [[ -n "${BASH_SOURCE-}" ]]; then
+        # Bash detection
+        [[ "${BASH_SOURCE[0]}" != "${0}" ]]
+    elif [[ -n "${ZSH_EVAL_CONTEXT-}" ]]; then
+        # Zsh detection
+        [[ "$ZSH_EVAL_CONTEXT" == *:file* ]]
+    else
+        # Fallback: check if we're in a function
+        [[ "${FUNCNAME[1]}" == "source" ]]
+    fi
+}
+
+# Enhanced function to stop the spinner and handle interrupts
 function stop_spinner_sigint() {
+    # Set global interrupt flag
+    interrupted=1
+    
     # If spinner is running, kill it and clear the line
     if [[ -n $SPINNER_PID ]]; then
-        kill $SPINNER_PID
+        kill $SPINNER_PID 2>/dev/null
         unset SPINNER_PID
-        printf "\r%s\n" "$(printf ' %.0s' {1..50})"
-        echo -en "\r\033[2K\033[F\033[2K"
+    fi
+    
+    # Clear progress bars and spinners
+    printf "\r%s\n" "$(printf ' %.0s' {1..50})"
+    echo -en "\r\033[2K\033[F\033[2K"
+    
+    # Log interruption
+    if [[ -n "${logE-}" ]]; then
         logE "User terminated the script. Cleaning up and exiting..."
+    fi
+    
+    # Context-aware exit
+    if is_sourced; then
+        return 1
+    else
         exit 1
     fi
 }
@@ -170,6 +203,38 @@ function stop_spinner() {
         echo -en "\r\033[2K\033[F\033[2K"
     fi
 }
+
+# Function for scripts to check if interrupted
+check_interrupted() {
+    if [[ $interrupted -eq 1 ]]; then
+        echo -en "\r\033[2K\033[F\033[2K"
+        if [[ -n "${logE-}" ]]; then
+            logE "Operation interrupted by user"
+        fi
+        if is_sourced; then
+            return 1
+        else
+            exit 1
+        fi
+    fi
+}
+
+# Function for use in while loop conditions
+can_continue() {
+    [[ $interrupted -eq 0 ]]
+}
+
+# Function to automatically set up interrupt handling
+setup_interrupt_handling() {
+    # Only setup once to avoid duplicate traps
+    if [[ $interrupt_handling_setup == false ]]; then
+        trap 'stop_spinner_sigint' SIGINT
+        interrupt_handling_setup=true
+    fi
+}
+
+# Automatically set up interrupt handling when sourced
+setup_interrupt_handling
 
 
 # Example with actual work

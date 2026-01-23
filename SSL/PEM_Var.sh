@@ -225,7 +225,7 @@ source "$current_dir/../lib/user_config.sh" --quiet	# Let's identify the logged-
 cacert_download	# Let's download cacert.pem 
 
 # Check if the certificate authority file is valid
-source "$current_dir/PEM_Check.sh" --path "$customcacert"
+source "$current_dir/PEM_Check.sh" --cafile "$customcacert"
 
 # List the Internal Root CAs and patch cacert.pem with internal Root CAs
 source "$current_dir/Keychain_InternalCAs.sh" --silent		# This command will invoke the script and return variable $CAList which lists the names of Internal Signing Root CAs from the Keychain Access in MacOS
