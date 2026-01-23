@@ -50,7 +50,7 @@ The following command will download the suite of tools to `~/Applications/proxy-
 
 
 ### Runtime video - Watch it in action...
-[![Watch the video](https://img.youtube.com/vi/sAhBpycDMLI/0.jpg)](https://www.youtube.com/watch?v=sAhBpycDMLI)
+[![Watch the video](https://img.youtube.com/vi/XUoyQP0hMX0/0.jpg)](https://www.youtube.com/watch?v=XUoyQP0hMX0)
 
 
 ### Examples
@@ -85,8 +85,10 @@ The following command will download the suite of tools to `~/Applications/proxy-
 
 6. **Patch Known PEM Certificate Stores**:
     ```zsh
+    ./Proxy_SSL_Trust.sh --scan
     ./Proxy_SSL_Trust.sh --patch
     ```
+    Note: Requires running --scan first to identify certificate stores. For testing only (not recommended).
 
 7. **Set up Proxy and PAC File**:
     ```zsh
