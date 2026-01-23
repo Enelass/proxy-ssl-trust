@@ -4,6 +4,18 @@
 dontsync.*
 dontsync/
 
+# Sync directories and cloud storage
+.sync/
+Sync/
+sync/
+.dropbox/
+.dropbox.cache/
+.icloud/
+.OneDrive/
+OneDriveTemp/
+Google Drive/
+.box/
+
 # Secret files and sensitive data
 *.pem
 *.key
@@ -109,3 +121,32 @@ logs/
 .recommenders/
 .settings/
 *mvn-eclipse.log
+
+# Shell script specific
+*.sh.bak
+*.sh.orig
+*.sh.tmp
+scripts/*.log
+tmp/
+temp/
+
+# Certificate and SSL files (in addition to existing)
+*.ca-bundle
+*.ca-certs
+cacert*.pem
+certificates/
+certs/
+ssl/
+
+# Backup and version files
+*.backup
+*.old
+*.orig
+*.bak
+*~
+
+# Test and build artifacts
+test_*.sh
+build/
+dist/
+output/
