@@ -35,7 +35,7 @@ help() {
     echo -e "Summary: The purpose of this script is to extract a list of internal root certificate authorities form the Keychain Access in MacOS
          To do so, it excludes the certificates found in the Keychain Access if there are Intermediate Authorities, Certificates or are not signing CAs.
          It only retain signing CAs and build a list of it. Each CA can then be added to certificate stores (e.g. PEM Files) for various clients that are...\n         not using the MacOS system certificate store (Keychain Access)."
-    echo -e "Author:  florian@photonsec.com.au\t\tgithub.com/Enelass\nRuntime: currently running as $(whoami)\nVervion: $version\n"
+    echo -e "Author:  contact@photonsec.com.au\t\tgithub.com/Enelass\nRuntime: currently running as $(whoami)\nVervion: $version\n"
     echo -e "Usage: $@ [OPTION]..."
     echo -e "  --help, -h\t\tDisplay this help menu..."
     echo -e "  --quiet, -q\t\tQuiet mode when selected, it will store a list of ${GREENW}Root${NC} CAs in a variable and only output a summary to stdout."
@@ -225,7 +225,7 @@ logI "        ${PINK}     This script is intended to identify and extract a list
 if [[ -z "${invoked-}" ]]; then 
     echo -e "Summary: The purpose of this script is to extract a list of internal signing certificate authorities form the Keychain Access in MacOS"
     echo    "         It only retain Root and/or Intermediate signing CAs that are internal and it builds a list of it."
-    echo -e "Author:  florian@photonsec.com.au\t\tgithub.com/Enelass\nRuntime: currently running as $(whoami)"
+    echo -e "Author:  contact@photonsec.com.au\t\tgithub.com/Enelass\nRuntime: currently running as $(whoami)"
     echo "This script was invoked directly... Setting variable for standalone use..."
 fi
 

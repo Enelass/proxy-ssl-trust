@@ -1,7 +1,7 @@
 #!/bin/zsh
 
 #########################################################
-# Written by Florian Bidabe / florian@photonsec.com.au
+# Written by Florian Bidabe / contact@photonsec.com.au
 # DESCRIPTION: This script is designed to search for and
 # enrich a list of PEM certificate authority
 # files (pem file(s)) found in the MacOS System
@@ -77,7 +77,7 @@ Examples:
     Uninstall and remove all files created by the script.
 
 Author:
-  Florian Bidabe (florian@photonsec.com.au)
+  Florian Bidabe (contact@photonsec.com.au)
   Initial Release Date: 11-Mar-2025
   Last Release Date: 04-Apr-2025
   Version: 0.1

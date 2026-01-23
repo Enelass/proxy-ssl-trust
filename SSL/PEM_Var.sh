@@ -30,7 +30,7 @@ if [[ -z "${invoked-}" ]]; then
     echo -e "\n\nSummary: The purpose of this script is to provide various CLI on MacOS with environment variables referencing a custom PEM certificate store including public and internal Root
          certificate authorities. This will resolve number of connectivity issues where CLI not relying on the MacOS Keychain Access can still trust internally
          signed servers using an Internal Root CA and trust https connections where SSL forward inspection is performed and signed on a fly by a proxy/ngfw internal CA."
-    echo -e "Author:  florian@photonsec.com.au\t\tgithub.com/Enelass\nRuntime: currently running as $(whoami)"
+    echo -e "Author:  contact@photonsec.com.au\t\tgithub.com/Enelass\nRuntime: currently running as $(whoami)"
     echo "This script was invoked directly... Setting variable for standalone use..."
     
     #################################   Variables     ####################################
@@ -47,7 +47,7 @@ help() {
     echo -e "Summary: The purpose of this script is to provide various CLI on MacOS with environment variables referencing a custom PEM certificate store including public and internal Root
          certificate authorities. This will resolve number of connectivity issues where CLI not relying on the MacOS Keychain Access can still trust internally
          signed servers using an Internal Root CA and trust https connections where SSL forward inspection is performed and signed on a fly by a proxy/ngfw internal CA."
-    echo -e "Author:  florian@photonsec.com.au\t\tgithub.com/Enelass\nRuntime: currently running as $(whoami)\nVervion: $version\n"
+    echo -e "Author:  contact@photonsec.com.au\t\tgithub.com/Enelass\nRuntime: currently running as $(whoami)\nVervion: $version\n"
     echo -e "Usage: $@ [OPTION]..."
     echo -e "  --help, -h\tDisplay this help menu..."
     echo -e "  --uninstall\tRemove the environement variables from Shell config file and remove downloaded files and backups"

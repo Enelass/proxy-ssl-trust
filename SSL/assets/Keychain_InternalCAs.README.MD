@@ -76,4 +76,4 @@ cd ~/Applications/proxy-ssl-trust/SSL
 
 ### Author:
 
-- Florian Bidabe (florian@photonsec.com.au)
+- Florian Bidabe (contact@photonsec.com.au)

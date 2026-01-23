@@ -36,7 +36,7 @@ fi
 # Display the Help Menu
 help() {
 	echo -e "Summary: This script is designed to manage and patch certificate stores on macOS systems.\nIt's primary function is to ensure that clients trust internal Certificate Authorities.\n"
-	echo -e "Author: florian@photonsec.com.au\t\tgithub.com/Enelass\nRuntime: currently running as $(whoami)\nVersion: $version\n"
+	echo -e "Author: contact@photonsec.com.au\t\tgithub.com/Enelass\nRuntime: currently running as $(whoami)\nVersion: $version\n"
 	echo -e "Usage: $script [OPTION]..."
   echo -e "  --help, -h\t\tShow this help menu"
   echo -e "  --version\t\tShow the version information"

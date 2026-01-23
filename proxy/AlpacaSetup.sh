@@ -33,7 +33,7 @@ if [[ -z "${teefile-}" ]]; then
 	
     logonly "------------------------------ new execution ------------------------------"
     log "Summary - The purpose of this script is to check network interfaces for PAC file settings, ensure Alpaca proxy\n\t\t\t      is installed and running if a PAC file is being used, and manage necessary proxy configurations."
-    log "Author  - florian@photonsec.com.au\t\tgithub.com/Enelass"
+    log "Author  - contact@photonsec.com.au\t\tgithub.com/Enelass"
     log "Runtime - Currently running as $(whoami)"
     logonly "Info - This script was invoked directly... Setting variable for standalone use..."
 fi
@@ -294,7 +294,7 @@ attempt_install() {
 # Function to display the Help Menu
 help() {
     log "Summary - The purpose of this script is to check network interfaces for PAC file settings, ensure Alpaca proxy\n\t\t\t      is installed and running if a PAC file is being used, and manage necessary proxy configurations."
-    log "Author:  florian@photonsec.com.au\t\tgithub.com/Enelass"
+    log "Author:  contact@photonsec.com.au\t\tgithub.com/Enelass"
     log "Runtime: currently running as $(whoami)"
     log "Usage: $@ [OPTION]..."
     log "  --help, -h\tDisplay this help menu..."

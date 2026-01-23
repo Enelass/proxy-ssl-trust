@@ -70,5 +70,5 @@ Failure - Valid PEM file but containing corrupted Certificate entries
 
 ## Author
 
-- Florian (florian@photonsec.com.au)
+- Florian (contact@photonsec.com.au)
 - GitHub: https://github.com/Enelass
