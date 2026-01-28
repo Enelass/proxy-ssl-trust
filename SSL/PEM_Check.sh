@@ -204,6 +204,7 @@ pem_integrity_check(){
   local -a certs=()
   local certCN
   local openssl_status
+  cert_CNs=""
 
   # Read entire pem file content
   content=$(<"$pem_file")
@@ -225,7 +226,7 @@ pem_integrity_check(){
 
   # Iterate over each certificate in the array and inspect it using OpenSSL
   local idx=1
-  while (( idx <= cert_count && can_continue )); do
+  while (( idx <= cert_count )) && can_continue; do
     local cert="${certs[idx]}"
     current_cert_index=$idx
 
@@ -241,13 +242,14 @@ pem_integrity_check(){
             | sort -u \
             | xargs
         )
+        openssl_status=$?
         if [[ -z "$certCN" ]]; then
           certCN=$(
             echo "$cert" | openssl x509 -text -noout 2>/dev/null \
               | grep "Subject: "
           )
+          openssl_status=$?
         fi
-        openssl_status=$?
     else
         echo "$cert" | openssl x509 -text -noout >/dev/null 2>&1
         openssl_status=$?
@@ -260,7 +262,9 @@ pem_integrity_check(){
       cert_error+="$current_cert_index) $certCN   "
     fi
     # echo "$current_cert_index )   $certCN"
-    if [[ ${verbose:-0} -eq 1 ]]; then cert_CNs+="$current_cert_index) $certCN\n"; fi
+    if [[ ${verbose:-0} -eq 1 ]]; then
+        cert_CNs+="$current_cert_index) $certCN\n"
+    fi
     
     # Check for interrupt before showing progress bar
     check_interrupted
@@ -379,5 +383,5 @@ else
     logS "No issue within this Certificate Store"
 fi
 
-if [[ $verbose -eq 1 ]]; then echo "$cert_CNs"; fi
+if [[ ${verbose:-0} -eq 1 ]]; then echo -e "$cert_CNs"; fi
 if [[ -n $silent || -n $quiet ]]; then unquiet; fi

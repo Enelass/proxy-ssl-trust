@@ -136,7 +136,6 @@ temp/
 cacert*.pem
 certificates/
 certs/
-ssl/
 
 # Backup and version files
 *.backup
