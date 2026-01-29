@@ -184,7 +184,7 @@ is_brew_alpaca(){
 
 # Function to verify if the localhost:3128 socket is free
 is_socket_free() {
-	LISTENING_ON_3128=$(lsof -iTCP:3128 -sTCP:LISTEN -P -n)			# What's listening on TCP3128?
+	LISTENING_ON_3128=$(lsof -iTCP:3128 -sTCP:LISTEN -P -n 2>/dev/null)			# What's listening on TCP3128?
 	unset alpaca3128
 	logI "${GREEN}   Socket - ${NC}Is anything listening on TCP 3128 ? (We need that socket)"
 	if [[ -n "$LISTENING_ON_3128" ]]; then
@@ -208,7 +208,7 @@ is_socket_free() {
 alpaca_listening() {
 	logI "   ${GREEN}Process - ${NC} Is Alpaca listening on any port but TCP3128?"
 	start_spinner "Please wait, ${GREENW}lsof${NC} can occasionaly take a while..."
-	Is_Alpaca_Listening=$(lsof -sTCP:LISTEN -P -i -a -c alpaca)		# Is Alpaca listening on any ports?
+	Is_Alpaca_Listening=$(lsof -sTCP:LISTEN -P -i -a -c alpaca 2>/dev/null)		# Is Alpaca listening on any ports?
 	stop_spinner
 	if [[ -n "$Is_Alpaca_Listening" ]]; then 
 		if echo "$Is_Alpaca_Listening" | grep " (LISTEN)" | grep -qv ":3128" ; then

@@ -62,9 +62,14 @@ Desktop.ini
 # IDE and Editor-specific files
 .vscode/
 .idea/
+.vs/
+.opencode/
 *.sublime-workspace
 *.sublime-project
 *.code-workspace
+
+# Claude Code
+.claude/
 
 # Node.js
 node_modules/
