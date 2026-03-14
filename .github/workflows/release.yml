@@ -1,0 +1,43 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Smoke test --help
+        run: |
+          chmod +x proxy_ssl_trust.sh || true
+          ./proxy_ssl_trust.sh --help || ./proxy_ssl_trust.sh --version
+
+      - name: Extract release notes
+        id: notes
+        run: |
+          tag_name="${GITHUB_REF##*/}"
+          version="${tag_name#v}"
+          if [[ -f CHANGELOG.md ]]; then
+            awk -v ver="$version" 'BEGIN{found=0} /^## \[/{ if(found) exit } { if($0 ~ "^## \[" ver "\]") found=1 } found' CHANGELOG.md > release-notes.md || true
+          fi
+          if [[ ! -s release-notes.md ]]; then
+            echo "Release $tag_name" > release-notes.md
+            echo "See CHANGELOG.md for details." >> release-notes.md
+          fi
+          echo "notes<<EOF" >> $GITHUB_OUTPUT
+          cat release-notes.md >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: Release ${{ github.ref_name }}
+          body: ${{ steps.notes.outputs.notes }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

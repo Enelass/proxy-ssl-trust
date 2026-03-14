@@ -1,22 +1,5 @@
-# .gitignore
-
-# Custom
-
-# Sync directories and cloud storage
-
-# Secret files and sensitive data
-
-
 # macOS system files
 .DS_Store
-
-# Temporary files from macOS
-
-# macOS aliases
-
-# Generic system files
-
-# User-specific files
 
 # IDE and Editor-specific files
 .vscode/
@@ -24,25 +7,6 @@
 .opencode/
 
 # Claude Code
-
-# Node.js
-
-# Python
-
-# Java
-
-# Log files
-
-# Archives
-
-# Operating system files
-
-# Local IDE configuration files
-
-# Shell script specific
-
-# Certificate and SSL files (in addition to existing)
-
-# Backup and version files
-
-# Test and build artifacts
+CLAUDE.md
+AGENTS.md
+GEMINI.md

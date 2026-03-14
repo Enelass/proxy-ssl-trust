@@ -23,8 +23,13 @@
 #################################   Variables     ####################################
 local scriptname=$(basename $(realpath $0))
 local AppName="Proxy_SSL_Trust"
-local version="1.7"
 script_dir=$(dirname $(realpath $0))
+version_file="$script_dir/VERSION"
+if [[ -r "$version_file" ]]; then
+    local version=$(< "$version_file")
+else
+    local version="1.7"
+fi
 teefile="/tmp/$AppName.log"
 invoked=true	# Set this variable to instruct other scripts that we've invoked them if the variable is set
 if [[ -z ${BLUEW-} ]]; then 
