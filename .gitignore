@@ -6,7 +6,9 @@
 .vs/
 .opencode/
 
-# Claude Code
+# Agentic AI
 CLAUDE.md
 AGENTS.md
 GEMINI.md
+CHANGELOG.tmp
+plan.md
