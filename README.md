@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/logo-minimalist.png" alt="GGUF Model Downloader logo" width="160" />
+  <img src="assets/logo-minimalist.png" alt="GGUF Model Downloader logo" width="260" />
 </p>
 
 
