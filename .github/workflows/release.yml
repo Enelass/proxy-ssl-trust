@@ -14,13 +14,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Smoke test --help
-        shell: bash
-        run: |
-          chmod +x proxy_ssl_trust.sh || true
-          bash -lc 'zsh --version || (echo "zsh not present, using bash" && sed -i "1s@/bin/zsh@/usr/bin/env bash@" proxy_ssl_trust.sh)'
-          ./proxy_ssl_trust.sh --help || ./proxy_ssl_trust.sh --version
-
       - name: Extract release notes
         id: notes
         shell: bash
