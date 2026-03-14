@@ -2,12 +2,13 @@
 
 ## Description
 
-The purpose of this suite of scripts for macOS is to resolve certificate trust issues where clients fail to connect due to not trusting Internal Certificate Authorities from the Keychain Access. This script invokes additional scripts to detect proxy settings, PAC files, and SSL material to permanently fix connectivity issues for all CLI. It supports a variety of switches for advanced troubleshooting. Below is a list of capabilities and practical examples.
+**The one-line fix for CLI proxy and certificate trust issues on macOS.**
+
+Tired of CLI tools failing with certificate errors behind corporate proxies? This automated suite detects your proxy configuration, extracts internal CAs from Keychain Access, and configures all CLI tools to work seamlessly with corporate network security. Run one command and forget about `SSL_CERT_FILE`, proxy variables, and certificate verification errors.
 
 ## Requirements
-- MacOS with Zsh shell (tested on MacOS 15)
-- Homebrew Package Manager
-- Bundled Shell scripts from the lib folders
+
+![macOS](https://img.shields.io/badge/macOS-15+-000000?style=flat&logo=apple&logoColor=white) ![Shell](https://img.shields.io/badge/Shell-Zsh-4EAA25?style=flat&logo=gnu-bash&logoColor=white) ![Homebrew](https://img.shields.io/badge/Homebrew-Required-FBB040?style=flat&logo=homebrew&logoColor=white)
 
 ### Getting Started
 The following command will download the suite of tools to `~/Applications/proxy-ssl-trust`. It will then execute the default option, equivalent to running `./Proxy_SSL_Trust.sh --proxy`, which configures macOS CLI to use a proxy and PAC file, and addresses SSL trust issues.
