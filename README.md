@@ -106,7 +106,7 @@ Log files are created in `/tmp` directory with the name `Proxy_SSL_Trust.log`.
 
 ## Version
 
-- **Current Version**: 1.7
+- .7
 - **Initial Release Date**: 19-Sep-2024
 - **Last Release Date**: 30-Mar-2025
 

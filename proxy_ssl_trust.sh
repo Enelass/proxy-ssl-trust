@@ -12,7 +12,7 @@
 #  INITIAL RELEASE DATE: 19-Sep-2024                                               #
 #  AUTHOR: Florian Bidabe                                                          #
 #  LAST RELEASE DATE: 30-Mar-2025                                                  #
-#  VERSION: 1.7                                                                    #
+.7                                                                    #
 #  REVISION:    Major revamp, better stdout, better logging, and bug fixes         #
 #                                                                                  #
 #                                                                                  #
@@ -28,7 +28,7 @@ version_file="$script_dir/VERSION"
 if [[ -r "$version_file" ]]; then
     local version=$(< "$version_file")
 else
-    local version="1.7"
+    .7"
 fi
 teefile="/tmp/$AppName.log"
 invoked=true	# Set this variable to instruct other scripts that we've invoked them if the variable is set
