@@ -8,17 +8,22 @@ on:
 jobs:
   release:
     runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
       - name: Smoke test --help
+        shell: bash
         run: |
           chmod +x proxy_ssl_trust.sh || true
-          zsh proxy_ssl_trust.sh --help || zsh proxy_ssl_trust.sh --version
+          bash -lc 'zsh --version || (echo "zsh not present, using bash" && sed -i "1s@/bin/zsh@/usr/bin/env bash@" proxy_ssl_trust.sh)'
+          ./proxy_ssl_trust.sh --help || ./proxy_ssl_trust.sh --version
 
       - name: Extract release notes
         id: notes
+        shell: bash
         run: |
           tag_name="${GITHUB_REF##*/}"
           version="${tag_name#v}"
@@ -29,9 +34,11 @@ jobs:
             echo "Release $tag_name" > release-notes.md
             echo "See CHANGELOG.md for details." >> release-notes.md
           fi
-          echo "notes<<EOF" >> $GITHUB_OUTPUT
-          cat release-notes.md >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+          {
+            echo 'notes<<EOF'
+            cat release-notes.md
+            echo 'EOF'
+          } >> "$GITHUB_OUTPUT"
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
