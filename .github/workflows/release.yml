@@ -15,7 +15,7 @@ jobs:
       - name: Smoke test --help
         run: |
           chmod +x proxy_ssl_trust.sh || true
-          ./proxy_ssl_trust.sh --help || ./proxy_ssl_trust.sh --version
+          zsh proxy_ssl_trust.sh --help || zsh proxy_ssl_trust.sh --version
 
       - name: Extract release notes
         id: notes
