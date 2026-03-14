@@ -2,7 +2,7 @@
 
 ## Description
 
-**The one-line fix for CLI proxy and certificate trust issues on macOS.**
+**The one command-line proxy and TLS trust fix for CLIs on macOS.**
 
 Tired of CLI tools failing with certificate errors behind corporate proxies? This automated suite detects your proxy configuration, extracts internal CAs from Keychain Access, and configures all CLI tools to work seamlessly with corporate network security. Run one command and forget about `SSL_CERT_FILE`, proxy variables, and certificate verification errors.
 
