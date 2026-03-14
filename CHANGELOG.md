@@ -1,6 +1,13 @@
 # Changelog
 
 
+## [1.7.3] - 2026-03-14
+
+### Chore/Other
+- chore: update
+
+
+
 ## [1.7.2] - 2026-03-14
 
 ### Chore/Other
