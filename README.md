@@ -1,4 +1,7 @@
-# Proxy_SSL_Trust
+<p align="center">
+  <img src="assets/logo-minimalist.png" alt="GGUF Model Downloader logo" width="160" />
+</p>
+
 
 ## Description
 
@@ -107,12 +110,4 @@ Log files are created in `/tmp` directory with the name `Proxy_SSL_Trust.log`.
 - **Initial Release Date**: 19-Sep-2024
 - **Last Release Date**: 30-Mar-2025
 
-## Contact
-
-Florian Bidabe  /  photonsec.com.au
-
-For any issues or support, you can reach out to the author at contact [at] photonsec [dot] com [dot] au.
-
-GitHub Repository: [github.com/Enelass](https://github.com/Enelass)
-
----
+![alt text](assets/Banner-minimalist.png)
