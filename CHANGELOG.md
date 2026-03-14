@@ -1,6 +1,13 @@
 # Changelog
 
 
+## [1.7.5] - 2026-03-14
+
+### Chore/Other
+- ci: grant contents:write for release
+
+
+
 ## [1.7.4] - 2026-03-14
 
 ### Chore/Other
