@@ -49,7 +49,7 @@ The following command will download the suite of tools to `~/Applications/proxy-
 ### --proxy (Detailed Design)
 ![proxy_ssltrust_detailed-design.svg](assets/proxy_ssltrust_detailed-design.svg)
 
-### Standalone Components 
+### Standalone Components
 ![proxy_ssltrust_standalone-components.svg](assets/proxy_ssltrust_standalone-components.svg)
 
 
@@ -103,11 +103,5 @@ The following command will download the suite of tools to `~/Applications/proxy-
 ## Logging
 
 Log files are created in `/tmp` directory with the name `Proxy_SSL_Trust.log`.
-
-## Version
-
-- .7
-- **Initial Release Date**: 19-Sep-2024
-- **Last Release Date**: 30-Mar-2025
 
 ![alt text](assets/Banner-minimalist.png)

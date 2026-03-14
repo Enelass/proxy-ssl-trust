@@ -4,6 +4,30 @@ set -euo pipefail
 bump_type="patch"
 no_push=false
 
+if [[ ${1-} == "--help" || ${1-} == "-h" ]]; then
+  cat << 'USAGE'
+Usage: ./tools/release.sh [major|minor|patch] [--no-push]
+
+This script:
+  - Reads the current version from VERSION (MAJOR.MINOR.PATCH).
+  - Bumps the version (major/minor/patch).
+  - Updates README.md and proxy_ssl_trust.sh with the new version.
+  - Regenerates CHANGELOG.md from git history.
+  - Commits the changes as "chore(release): vX.Y.Z" and tags vX.Y.Z.
+
+After it completes, push with:
+  git push origin main --follow-tags
+
+See tools/RELEASE.md for the full release checklist.
+USAGE
+  exit 0
+fi
+
+set -euo pipefail
+
+bump_type="patch"
+no_push=false
+
 while [[ $# -gt 0 ]]; do
   case "$1" in
     major|minor|patch)
